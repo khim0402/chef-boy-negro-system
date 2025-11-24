@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>ChefBoy Negro | Forecast</title>
+  <link rel="stylesheet" href="../css/forecast.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header class="pos-header">
+    <div class="header-left">
+      <img src="../images/chef.webp" alt="ChefBoy Logo" class="logo-img"/>
+      <span class="brand-name">ChefBoy Negro</span>
+    </div>
+    <div class="header-right">
+      <span id="datetime"></span>
+      <button class="logout-btn">Logout</button>
+    </div>
+  </header>
+  <div class="page-wrapper">
+    <nav class="sidebar">
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <a href="sales.html" class="nav-link">Sales</a>
+      <a href="inventory.html" class="nav-link">Inventory</a>
+      <a href="forecast.html" class="nav-link active">Forecast</a>
+      <a href="settings.php" class="nav-link">Settings</a>
+    </nav>
+
+    <main class="forecast-main">
+  <h2>Sales Forecast</h2>
+  <canvas id="forecast-chart"></canvas>
+
+  <!-- Run Forecast Button -->
+  <form action="../php/forecast.php" method="post" class="forecast-form">
+  <button type="submit" class="forecast-btn">Run Forecast</button>
+</form>
+  <section class="accuracy-panel">
+    <h3>Forecast Accuracy</h3>
+    <div id="accuracy-metrics">
+      <p><strong>Model:</strong> <span id="model-name"></span></p>
+      <p><strong>MAPE:</strong> <span id="mape-value"></span>%</p>
+      <p><strong>RMSE:</strong> ₱<span id="rmse-value"></span></p>
+      <p><strong>MAE:</strong> ₱<span id="mae-value"></span></p>
+      <p><strong>Trained On:</strong> <span id="trained-date"></span></p>
+      <p><strong>Forecast Horizon:</strong> <span id="horizon-days"></span> days</p>
+    </div>
+  </section>
+
+  <section class="inventory-panel">
+    <h3>Inventory Forecast</h3>
+    <table class="inventory-table" id="inventory-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Product</th>
+          <th>Avg Forecast (qty)</th>
+          <th>Stock</th>
+          <th>Threshold</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</main>
+  </div>
+
+  <script src="../js/forecast.js"></script>
+</body>
+</html>

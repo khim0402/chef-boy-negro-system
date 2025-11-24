@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ChefBoy Negro | Inventory</title>
+  <link rel="stylesheet" href="../css/inventory.css" />
+</head>
+<body>
+  <!-- POS-style header -->
+  <header class="pos-header">
+    <div class="header-left">
+      <img src="../images/chef.webp" alt="ChefBoy Logo" class="logo-img" />
+      <span class="brand-name">ChefBoy Negro</span>
+    </div>
+    <div class="header-right">
+      <span id="datetime"></span>
+      <button class="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <!-- Page wrapper -->
+  <div class="page-wrapper">
+    <!-- Sidebar navigation -->
+    <nav class="sidebar">
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <a href="sales.html" class="nav-link">Sales</a>
+      <a href="inventory.html" class="nav-link active">Inventory</a>
+      <a href="forecast.html" class="nav-link">Forecast</a>
+      <a href="settings.php" class="nav-link">Settings</a>
+    </nav>
+
+    <!-- Main inventory content -->
+    <main class="inventory-main">
+      <h2>Inventory</h2>
+      <div class="filters">
+        <input type="text" id="inventory-search" placeholder="Search by name..." />
+        <select id="category-filter">
+          <option value="">All Categories</option>
+          <option value="Pork">Pork</option>
+          <option value="Seafood">Seafood</option>
+          <option value="Pasta">Pasta</option>
+          <option value="Bilao/Trays">Bilao/Trays</option>
+          <option value="Beef">Beef</option>
+          <option value="Chicken">Chicken</option>
+          <option value="Vegetable">Vegetable</option>
+          <option value="Dessert">Dessert</option>
+          <option value="Rice">Rice</option>
+          <option value="Sizzling/Platters">Sizzling/Platters</option>
+          <option value="Sizzling w/ Rice">Sizzling w/ Rice</option>
+          <option value="Silog">Silog</option>
+          <option value="Short Order">Short Order</option>
+          <option value="Bilao">Bilao</option>
+        </select>
+      </div>
+
+      <table class="inventory-table">
+        <thead>
+          <tr>
+            <th>Product ID</th>
+            <th>Product Name</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Quantity</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="inventory-body">
+          <!-- Dynamic rows go here -->
+        </tbody>
+      </table>
+    </main>
+  </div>
+
+  <!-- Stock In Modal -->
+  <div id="stock-in-modal" class="modal hidden">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeModal('stock-in-modal')">&times;</span>
+      <h3>Add Stock</h3>
+      <input type="text" id="in-name" readonly />
+      <input type="number" id="in-qty" placeholder="Quantity" />
+      <button onclick="submitStockIn()">Submit</button>
+    </div>
+  </div>
+
+  <!-- Stock Out Modal -->
+  <div id="stock-out-modal" class="modal hidden">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeModal('stock-out-modal')">&times;</span>
+      <h3>Remove Stock</h3>
+      <input type="text" id="out-name" readonly />
+      <input type="number" id="out-qty" placeholder="Quantity" />
+      <button onclick="submitStockOut()">Submit</button>
+    </div>
+  </div>
+
+  <script src="../js/inventory.js"></script>
+</body>
+</html>

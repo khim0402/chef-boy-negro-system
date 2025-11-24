@@ -1,0 +1,145 @@
+/* ===== Global Reset ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ===== Background ===== */
+body {
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background: #b30000; /* deep red */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+/* ===== Container ===== */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ===== Login Box ===== */
+.login-box {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+  width: 340px;
+  text-align: center;
+}
+
+.login-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;  /* align to the left */
+  gap: 16px;                    /* moderate spacing between logo and title */
+  margin-bottom: 1.5rem;
+  padding: 0 0.5rem;
+}
+
+.logo-img {
+  height: 100px;
+  width: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.login-title {
+  font-size: 2.8rem;
+  color: #b30000;
+  font-weight: 700;
+}
+
+.login-header h2 {
+  color: #b30000;
+  font-weight: 600;
+  text-align: left;   /* align text left next to logo */
+}
+
+/* ===== Input Groups ===== */
+.input-group {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.input-group label {
+  font-size: 0.9rem;
+  color: #444;
+  margin-bottom: 0.3rem;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+/* ===== Button Group ===== */
+.button-group {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 0.5rem;
+}
+
+.btn-login {
+  flex: 1;
+  padding: 0.9rem;
+  background: #b30000;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn-login:hover {
+  background: #990000;
+}
+
+.btn-clear {
+  flex: 1;
+  padding: 0.9rem;
+  background: #f0f0f0;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn-clear:hover {
+  background: #e0e0e0;
+}
+
+/* ===== Error Message ===== */
+#errorMsg {
+  display: block;
+  color: #d32f2f;
+  background-color: #ffe6e6;
+  padding: 10px;
+  border-radius: 5px;
+  margin-top: 10px;
+  font-weight: bold;
+  text-align: center;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+#errorMsg.hide {
+  opacity: 0;
+  visibility: hidden;
+}

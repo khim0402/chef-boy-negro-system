@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ChefBoy Negro | POS</title>
+  <link rel="stylesheet" href="../css/pos.css" />
+</head>
+<body>
+  <header class="pos-header">
+    <div class="logo">
+      <img src="../images/chef.webp" alt="Chef Logo" class="logo-img" />
+      ChefBoy Negro
+    </div>
+    <div class="header-right">
+      <span id="datetime"></span>
+      <button class="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <main class="pos-main">
+    <section class="order-section">
+      <h2>Order Summary</h2>
+      <table class="order-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Qty</th>
+            <th>Price</th>
+            <th>Amount</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="order-items"></tbody>
+      </table>
+      <div class="order-total">
+        <span>Total:</span>
+        <span id="total-amount">₱0.00</span>
+      </div>
+    </section>
+
+    <section class="payment-section">
+      <div class="payment-summary">
+        <p>Received: <span id="amount-received">₱0.00</span></p>
+        <p>Change: <span id="total-change">₱0.00</span></p>
+        <input type="hidden" id="amount-received-value" />
+      </div>
+
+      <div class="keypad">
+        <button>7</button><button>8</button><button>9</button>
+        <button>4</button><button>5</button><button>6</button>
+        <button>1</button><button>2</button><button>3</button>
+        <button class="zero">0</button>
+        <button class="clear">C</button>
+      </div>
+
+      <div class="payment-methods">
+        <button class="btn-method">Cash</button>
+        <button class="btn-method">GCash</button>
+      </div>
+
+      <button class="btn-proceed">Proceed</button>
+    </section>
+  </main>
+
+  <section class="category-grid">
+    <button>Pork</button><button>Seafood</button><button>Pasta</button>
+    <button>Bilao/Trays</button><button>Beef</button><button>Chicken</button>
+    <button>Vegetable</button><button>Dessert</button><button>Rice</button>
+    <button>Sizzling/Platters</button><button>Sizzling w/ Rice</button><button>Silog</button>
+    <button>Short Order</button><button>Bilao</button>
+  </section>
+
+  <div id="category-modal" class="modal hidden">
+    <div class="modal-content">
+      <span class="modal-close">&times;</span>
+      <h3 id="modal-title">Category</h3>
+      <ul id="modal-items"></ul>
+    </div>
+  </div>
+
+  <div id="stock-window" class="stock-window hidden">
+    <div class="stock-window-content">
+      <h3>Out of Stock</h3>
+      <p id="stock-window-message"></p>
+      <button onclick="closeStockWindow()">OK</button>
+    </div>
+  </div>
+
+  <script src="../js/pos.js"></script>
+</body>
+</html>

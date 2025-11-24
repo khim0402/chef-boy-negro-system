@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ChefBoy Negro | Sales</title>
+  <link rel="stylesheet" href="../css/sales.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <!-- 🔷 POS-style Header -->
+  <header class="pos-header">
+    <div class="header-left">
+      <img src="../images/chef.webp" alt="ChefBoy Logo" class="logo-img" />
+      <span class="brand-name">ChefBoy Negro</span>
+    </div>
+    <div class="header-right">
+      <span id="datetime"></span>
+      <button class="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <!-- 🔷 Page Wrapper -->
+  <div class="page-wrapper">
+    
+    <!-- 🔷 Sidebar Navigation -->
+    <nav class="sidebar">
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <a href="sales.html" class="nav-link active">Sales</a>
+      <a href="inventory.html" class="nav-link">Inventory</a>
+      <a href="forecast.html" class="nav-link">Forecast</a>
+      <a href="settings.php" class="nav-link">Settings</a>
+    </nav>
+
+    <!-- 🔷 Main Sales Content -->
+    <main class="sales-main">
+      
+      <!-- 📊 Sales Overview Cards -->
+      <section class="sales-overview">
+        <h3>📊 Sales Overview</h3>
+        <div class="sales-cards">
+          <div class="card"><h4>Daily Sales</h4><p id="daily-sales">₱0.00</p></div>
+          <div class="card"><h4>Weekly Sales</h4><p id="weekly-sales">₱0.00</p></div>
+          <div class="card"><h4>Monthly Sales</h4><p id="monthly-sales">₱0.00</p></div>
+        </div>
+      </section>
+
+      <!-- 🧾 Sales History Table -->
+      <section class="sales-history">
+        <h3>🧾 Sales History</h3>
+        <div class="filters">
+          <label>Start Date: <input type="date" id="start-date"></label>
+          <label>End Date: <input type="date" id="end-date"></label>
+          <button onclick="filterSales()">Filter</button>
+        </div>
+
+        <table class="sales-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Product</th>
+              <th>Payment Method</th>
+              <th>Qty</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody id="sales-body">
+            <!-- Injected rows -->
+          </tbody>
+        </table>
+      </section>
+
+    </main>
+  </div>
+  <!-- 🔷 Script -->
+  <script src="../js/sales.js"></script>
+</body>
+</html>

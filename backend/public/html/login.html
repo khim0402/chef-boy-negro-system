@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chef Boy Negro | Login</title>
+  <link rel="stylesheet" href="../css/login.css">
+</head>
+<body>
+  <div class="login-container">
+  <div class="login-box">
+    <!-- Header with spaced logo and title -->
+    <div class="login-header">
+      <img src="../images/chef.webp" alt="Chef Logo" class="logo-img">
+      <h2 class="login-title">Login</h2>
+    </div>
+
+    <form id="loginForm">
+      <p id="errorMsg" class="hide"></p>
+      <div class="input-group">
+        <label for="email">Email</label>
+        <input type="text" name="email" placeholder="Enter your email" required />
+      </div>
+      <div class="input-group">
+        <label for="password">Password</label>
+        <input type="password" name="password" placeholder="Enter your password" required>
+      </div>
+      <div class="button-group">
+        <button type="submit" class="btn-login">Login</button>
+        <button type="button" class="btn-clear" onclick="document.getElementById('loginForm').reset()">Clear</button>
+      </div>
+    </form>
+  </div>
+</div>
+  
+  <script src="../js/login.js"></script>
+</body>
+</html>

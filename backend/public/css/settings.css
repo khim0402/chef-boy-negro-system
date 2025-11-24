@@ -1,0 +1,189 @@
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #f9f9f9;
+  color: #333;
+}
+
+/* ====== HEADER ====== */
+.pos-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #b30000;
+  color: #fff;
+  padding: 0.8rem 1.2rem;
+  height: 60px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.logo-img {
+  height: 60px;         /* was 40px — now slightly larger */
+  width: auto;
+  border-radius: 50%;
+  object-fit: cover;    /* keeps it clean if the image isn't square */
+}
+
+.brand-name {
+  font-size: 1.4rem;
+  font-weight: bold;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logout-btn {
+  background: #fff;
+  color: #b30000;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* ====== PAGE WRAPPER ====== */
+.page-wrapper {
+  display: flex;
+  min-height: calc(100vh - 60px);
+}
+
+/* ====== SIDEBAR ====== */
+.sidebar {
+  width: 180px;
+  background-color: #333;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+.nav-link {
+  color: #fff;
+  text-decoration: none;
+  padding: 0.8rem;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.nav-link:hover {
+  background-color: #d00;
+}
+
+.nav-link.active {
+  background-color: #d00;
+}
+
+.settings-main {
+  padding: 20px;
+  color: #000000;
+}
+
+.settings-main h2 {
+  margin-bottom: 20px;
+  font-size: 22px;
+  color: #000000;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #bdc3c7;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.save-btn {
+  background-color: #d00;
+  color: #fff;
+  font-weight: bold;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.save-btn:hover {
+  background-color: #f30f0f;
+  transform: scale(1.05);
+}
+
+#settings-message {
+  margin-top: 15px;
+  font-weight: bold;
+  text-align: center;
+}
+
+#settings-message.success {
+  color: #27ae60;
+}
+
+#settings-message.error {
+  color: #c0392b;
+}
+
+.user-list {
+  margin-top: 30px;
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.user-table th,
+.user-table td {
+  border: 1px solid #bdc3c7;
+  padding: 8px;
+  text-align: center;
+}
+
+.user-table th {
+  background-color: #eee;
+  color: #000000;
+}
+
+.user-table td .delete-btn {
+  padding: 0.3rem 0.6rem;
+  margin: 0 2px;
+  background-color: #d00;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.user-table td .delete-btn:hover {
+  background-color: #f30f0f;
+}
+
+.error {
+  background: #ffcccc;
+  color: #b30000;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #b30000;
+  border-radius: 4px;
+  font-weight: bold;
+}

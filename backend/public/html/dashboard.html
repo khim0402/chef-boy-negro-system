@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ChefBoy Negro | Dashboard</title>
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <header class="pos-header">
+    <div class="header-left">
+      <img src="../images/chef.webp" alt="ChefBoy Logo" class="logo-img" />
+      <span class="brand-name">ChefBoy Negro</span>
+    </div>
+    <div class="header-right">
+      <span id="datetime"></span>
+      <button class="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <div class="page-wrapper">
+    <nav class="sidebar">
+      <a href="dashboard.html" class="nav-link active">Dashboard</a>
+      <a href="sales.html" class="nav-link">Sales</a>
+      <a href="inventory.html" class="nav-link">Inventory</a>
+      <a href="forecast.html" class="nav-link">Forecast</a>
+      <a href="settings.php" class="nav-link">Settings</a>
+    </nav>
+
+    <main class="dashboard-main">
+      <h2>Dashboard</h2>
+      <div class="card-grid">
+        <div class="card"><h3>Daily Sales</h3><p id="daily-sales">₱0.00</p></div>
+        <div class="card"><h3>Weekly Sales</h3><p id="weekly-sales">₱0.00</p></div>
+        <div class="card"><h3>Monthly Sales</h3><p id="monthly-sales">₱0.00</p></div>
+      </div>
+
+      <section class="restock-alert">
+        <h3>🔔 Restock Alerts</h3>
+        <div id="alert-bubbles" class="alert-bubbles">
+          <!-- Dynamic alert bubbles will appear here -->
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../js/dashboard.js"></script>
+</body>
+</html>
