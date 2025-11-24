@@ -6,3 +6,4 @@ SQLAlchemy
 PyMySQL
 Flask
 psycopg2-binary
+gunicorn
