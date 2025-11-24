@@ -21,16 +21,19 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return {"message": "Chef Boy Negro Forecast API is running"}
+  return jsonify({"message": "Chef Boy Negro Forecast API is running"})
 
 @app.route("/health")
 def health():
-    try:
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        return jsonify({"status": "ok", "db": "connected"})
-    except Exception as e:
-        return jsonify({"status": "error", "detail": str(e)}), 500
+  try:
+    with engine.connect() as conn:
+      conn.execute(text("SELECT 1"))
+    return jsonify({"status": "ok", "db": "connected"})
+  except Exception as e:
+    return jsonify({"status": "error", "detail": str(e)}), 500
+
+if __name__ == "__main__":
+  app.run(host="0.0.0.0", port=10000, debug=True)
 
 FORECAST_HORIZON_DAYS = 7
 MIN_HISTORY_POINTS = 7
