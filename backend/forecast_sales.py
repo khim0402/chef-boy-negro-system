@@ -9,14 +9,12 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from datetime import datetime, timedelta
 from sqlalchemy import create_engine, text
 
-# === CONFIG (read from environment on Render) ===
-DB_USER = os.getenv("DB_USER", "root")
-DB_PASS = os.getenv("DB_PASS", "123456")
-DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
+DB_HOST = os.getenv("DB_HOST", "dpg-d4i43m75r7bs73c7gvl0-a")
+DB_USER = os.getenv("DB_USER", "chefboyuser")
+DB_PASS = os.getenv("DB_PASS", "jA9GdmJDas6lbzWYzIybF50GqoHvOqwF")
 DB_NAME = os.getenv("DB_NAME", "chefboynegro")
 
-# Use PyMySQL driver for MySQL; switch to 'postgresql+psycopg2' if using Render PostgreSQL
-DB_URL = f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
+DB_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
 engine = create_engine(DB_URL, pool_pre_ping=True)
 
 FORECAST_HORIZON_DAYS = 7
