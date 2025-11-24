@@ -9,6 +9,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from datetime import datetime, timedelta
 from sqlalchemy import create_engine, text
 
+# --- Database credentials from environment ---
 DB_HOST = os.getenv("DB_HOST", "dpg-d4i43m75r7bs73c7gvl0-a")
 DB_USER = os.getenv("DB_USER", "chefboyuser")
 DB_PASS = os.getenv("DB_PASS", "jA9GdmJDas6lbzWYzIybF50GqoHvOqwF")
@@ -16,6 +17,22 @@ DB_NAME = os.getenv("DB_NAME", "chefboynegro")
 
 DB_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
 engine = create_engine(DB_URL, pool_pre_ping=True)
+
+# --- Flask app setup ---
+app = Flask(__name__)
+
+@app.route("/health")
+def health():
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return jsonify({"status": "ok", "db": "connected"})
+    except Exception as e:
+        return jsonify({"status": "error", "detail": str(e)}), 500
+
+# --- Entry point for local dev (Windows) ---
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000, debug=True)
 
 FORECAST_HORIZON_DAYS = 7
 MIN_HISTORY_POINTS = 7
