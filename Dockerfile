@@ -1,13 +1,10 @@
-FROM php:8.2-cli
+FROM php:8.2-apache
 
-# Install Postgres PDO driver + CA certificates
-RUN apt-get update && apt-get install -y \
-    libpq-dev \
-    ca-certificates \
-    && docker-php-ext-install pdo pdo_pgsql \
-    && update-ca-certificates
+# Install Postgres PDO driver
+RUN apt-get update && apt-get install -y libpq-dev \
+    && docker-php-ext-install pdo pdo_pgsql
 
-WORKDIR /app
-COPY backend/php/ /app/
+WORKDIR /var/www/html
+COPY backend/php/ /var/www/html/
+
 EXPOSE 80
-CMD ["php", "-S", "0.0.0.0:80"]
