@@ -1,11 +1,12 @@
 <?php
-$output = shell_exec('"C:\xampp\htdocs\Chef Boy Negro\venv\Scripts\python.exe" "C:\xampp\htdocs\Chef Boy Negro\backend\forecast_sales.py" 2>&1');
+header('Content-Type: application/json');
+
+// Call Python forecast script inside container
+$output = shell_exec("python /var/www/html/php/forecast_sales.py 2>&1");
 
 if ($output === null) {
-    header("Location: ../html/forecast.html?status=error");
-    exit;
+    echo json_encode(["status" => "error", "message" => "Forecast script failed"]);
 } else {
-    header("Location: ../html/forecast.html?status=success");
-    exit;
+    echo $output; // forecast_sales.py should print JSON
 }
 ?>

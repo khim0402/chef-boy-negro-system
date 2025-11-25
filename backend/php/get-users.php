@@ -2,12 +2,11 @@
 header('Content-Type: application/json');
 require_once(__DIR__ . '/db.php');
 
-$result = $conn->query("SELECT user_id, email, role, created_at FROM users ORDER BY user_id DESC");
-$users = [];
-
-while ($row = $result->fetch_assoc()) {
-    $users[] = $row;
+try {
+    $stmt = $pdo->query("SELECT user_id, email, role, created_at FROM users ORDER BY user_id DESC");
+    $users = $stmt->fetchAll();
+    echo json_encode($users);
+} catch (Exception $e) {
+    echo json_encode(["status" => "error", "message" => $e->getMessage()]);
 }
-
-echo json_encode($users);
 ?>

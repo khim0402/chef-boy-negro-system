@@ -1,13 +1,12 @@
 <?php
 require_once(__DIR__ . '/db.php');
+header('Content-Type: application/json');
 
-$sql = "SELECT product_id, category, name, price, qty, threshold FROM inventory";
-$result = $conn->query($sql);
-
-$items = [];
-while ($row = $result->fetch_assoc()) {
-  $items[] = $row;
+try {
+    $stmt = $pdo->query("SELECT product_id, category, name, price, qty, threshold FROM inventory");
+    $items = $stmt->fetchAll();
+    echo json_encode($items);
+} catch (Exception $e) {
+    echo json_encode(["status" => "error", "message" => $e->getMessage()]);
 }
-
-echo json_encode($items);
 ?>

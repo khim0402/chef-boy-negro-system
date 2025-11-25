@@ -2,37 +2,102 @@
 require_once(__DIR__ . '/db.php');
 header('Content-Type: application/json');
 
-$data = json_decode(file_get_contents("php://input"), true);
-$items = $data['items'] ?? [];
-$method = $conn->real_escape_string($data['payment_method'] ?? '');
-
-if (empty($items) || !$method) {
-  echo json_encode(['status' => 'error', 'message' => 'Missing items or payment method']);
-  exit;
-}
-
-$conn->begin_transaction();
-
 try {
-  foreach ($items as $item) {
-    $product_id = (int)$item['product_id'];
-    $name = $conn->real_escape_string($item['name']);
-    $qty = (int)$item['qty'];
-    $amount = (float)$item['amount'];
+    $input = json_decode(file_get_contents('php://input'), true);
 
-    // 🔹 Insert into sales table
-    $stmt = $conn->prepare("INSERT INTO sales (sale_date, product_name, payment_method, quantity, amount, product_id) VALUES (CURDATE(), ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssidi", $name, $method, $qty, $amount, $product_id);
-    $stmt->execute();
+    if (!isset($input['items']) || !is_array($input['items'])) {
+        throw new Exception("Invalid items array.");
+    }
 
-    // 🔹 Deduct from inventory
-    $conn->query("UPDATE inventory SET qty = GREATEST(0, qty - $qty) WHERE product_id = $product_id");
-  }
+    $payment_method = trim($input['payment_method'] ?? '');
+    if ($payment_method === '') {
+        throw new Exception("Missing payment method.");
+    }
 
-  $conn->commit();
-  echo json_encode(['status' => 'success']);
+    $items = $input['items'];
+    $total_amount = 0.0;
+
+    // Compute total (skip voided items)
+    foreach ($items as $item) {
+        if (!empty($item['voided'])) {
+            continue;
+        }
+        $amount = (float)($item['amount'] ?? 0);
+        $total_amount += $amount;
+    }
+
+    $pdo->beginTransaction();
+
+    // Insert sale and get ID (Postgres RETURNING)
+    $stmtSale = $pdo->prepare("
+        INSERT INTO sales (payment_method, total_amount, created_at)
+        VALUES (:payment_method, :total_amount, NOW())
+        RETURNING id
+    ");
+    $stmtSale->execute([
+        ':payment_method' => $payment_method,
+        ':total_amount' => $total_amount
+    ]);
+    $sales_id = (int)$stmtSale->fetchColumn();
+
+    // Prepare item insert and inventory update
+    $stmtItem = $pdo->prepare("
+        INSERT INTO sales_items (sales_id, product_id, qty, price, amount)
+        VALUES (:sales_id, :product_id, :qty, :price, :amount)
+    ");
+
+    $stmtInv = $pdo->prepare("
+        UPDATE inventory
+        SET qty = GREATEST(0, qty - :qty)
+        WHERE product_id = :product_id
+    ");
+
+    foreach ($items as $item) {
+        if (!empty($item['voided'])) {
+            continue;
+        }
+
+        $product_id = (int)($item['product_id'] ?? 0);
+        $qty        = (int)($item['qty'] ?? 0);
+        $price      = (float)($item['price'] ?? 0);
+        $amount     = (float)($item['amount'] ?? 0);
+
+        if ($product_id <= 0 || $qty <= 0) {
+            throw new Exception("Invalid product or quantity in items.");
+        }
+
+        // Insert item
+        $stmtItem->execute([
+            ':sales_id'   => $sales_id,
+            ':product_id' => $product_id,
+            ':qty'        => $qty,
+            ':price'      => $price,
+            ':amount'     => $amount
+        ]);
+
+        // Update inventory
+        $stmtInv->execute([
+            ':qty'        => $qty,
+            ':product_id' => $product_id
+        ]);
+    }
+
+    $pdo->commit();
+
+    echo json_encode([
+        "status" => "success",
+        "message" => "Transaction saved",
+        "transaction_id" => $sales_id,
+        "total_amount" => $total_amount
+    ]);
 } catch (Exception $e) {
-  $conn->rollback();
-  echo json_encode(['status' => 'error', 'message' => 'Transaction failed']);
+    if ($pdo && $pdo->inTransaction()) {
+        $pdo->rollback();
+    }
+    http_response_code(400);
+    echo json_encode([
+        "status" => "error",
+        "message" => $e->getMessage()
+    ]);
 }
 ?>

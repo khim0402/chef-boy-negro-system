@@ -1,45 +1,34 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
-header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-header('Pragma: no-cache');
-header("Content-Security-Policy: frame-ancestors 'self'");
-
 require_once(__DIR__ . '/../../php/db.php');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode(file_get_contents("php://input"), true);
-    $name = $data['name'];
-    $qty = (int)$data['qty'];
-    $action = $data['action'];
+    $name   = $data['name'] ?? '';
+    $qty    = (int)($data['qty'] ?? 0);
+    $action = $data['action'] ?? '';
 
-    if ($action === 'add') {
-        $stmt = $conn->prepare("UPDATE inventory SET qty = qty + ? WHERE name = ?");
-        $stmt->bind_param("is", $qty, $name);
-        $stmt->execute();
-    } elseif ($action === 'remove') {
-        $stmt = $conn->prepare("UPDATE inventory SET qty = GREATEST(qty - ?, 0) WHERE name = ?");
-        $stmt->bind_param("is", $qty, $name);
-        $stmt->execute();
+    try {
+        if ($action === 'add') {
+            $stmt = $pdo->prepare("UPDATE inventory SET qty = qty + :qty WHERE name = :name");
+        } elseif ($action === 'remove') {
+            $stmt = $pdo->prepare("UPDATE inventory SET qty = GREATEST(qty - :qty, 0) WHERE name = :name");
+        } else {
+            throw new Exception("Invalid action");
+        }
+
+        $stmt->execute([':qty' => $qty, ':name' => $name]);
+        echo json_encode(["status" => "success"]);
+    } catch (Exception $e) {
+        echo json_encode(["status" => "error", "message" => $e->getMessage()]);
     }
-
-    echo json_encode(["status" => "success"]);
     exit;
 }
 
 try {
-    $items = [];
-    $res = $conn->query("SELECT product_id, name, category, price, qty, threshold 
+    $stmt = $pdo->query("SELECT product_id, name, category, price, qty, threshold 
                          FROM inventory ORDER BY product_id ASC");
-    while ($row = $res->fetch_assoc()) {
-        $items[] = [
-            "product_id" => $row['product_id'],
-            "name" => $row['name'],
-            "category" => $row['category'],
-            "price" => (float)$row['price'],
-            "qty" => (int)$row['qty'],
-            "threshold" => (int)$row['threshold']
-        ];
-    }
+    $items = $stmt->fetchAll();
     echo json_encode($items);
 } catch (Exception $e) {
     echo json_encode(["status" => "error", "message" => $e->getMessage()]);

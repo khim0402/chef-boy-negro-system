@@ -8,47 +8,73 @@ try {
         throw new Exception("Invalid items array.");
     }
 
-    $payment_method = $input['payment_method'] ?? 'Unknown';
+    $payment_method = trim($input['payment_method'] ?? '');
+    if ($payment_method === '') {
+        throw new Exception("Missing payment method.");
+    }
+
     $items = $input['items'];
-    $total_amount = 0;
-
-    $conn->begin_transaction();
+    $total_amount = 0.0;
 
     foreach ($items as $item) {
-        if ($item['voided']) continue;
-        $total_amount += $item['amount'];
+        if (!empty($item['voided'])) continue;
+        $total_amount += (float)($item['amount'] ?? 0);
     }
 
-    $stmt = $conn->prepare("INSERT INTO sales (payment_method, total_amount, created_at) VALUES (?, ?, NOW())");
-    $stmt->bind_param("sd", $payment_method, $total_amount);
-    $stmt->execute();
-    $sales_id = $stmt->insert_id;
-    $stmt->close();
+    $pdo->beginTransaction();
 
-    $itemStmt = $conn->prepare("INSERT INTO sales_items (sales_id, product_id, qty, price, amount) VALUES (?, ?, ?, ?, ?)");
-    $invStmt = $conn->prepare("UPDATE inventory SET qty = qty - ? WHERE product_id = ?");
+    // Insert sale and get ID
+    $stmtSale = $pdo->prepare("
+        INSERT INTO sales (payment_method, total_amount, created_at)
+        VALUES (:payment_method, :total_amount, NOW())
+        RETURNING id
+    ");
+    $stmtSale->execute([
+        ':payment_method' => $payment_method,
+        ':total_amount'   => $total_amount
+    ]);
+    $sales_id = (int)$stmtSale->fetchColumn();
+
+    // Prepare item insert and inventory update
+    $stmtItem = $pdo->prepare("
+        INSERT INTO sales_items (sales_id, product_id, qty, price, amount)
+        VALUES (:sales_id, :product_id, :qty, :price, :amount)
+    ");
+    $stmtInv = $pdo->prepare("
+        UPDATE inventory SET qty = GREATEST(0, qty - :qty)
+        WHERE product_id = :product_id
+    ");
 
     foreach ($items as $item) {
-        if ($item['voided']) continue;
+        if (!empty($item['voided'])) continue;
 
-        $itemStmt->bind_param("iiidd", $sales_id, $item['product_id'], $item['qty'], $item['price'], $item['amount']);
-        $itemStmt->execute();
+        $stmtItem->execute([
+            ':sales_id'   => $sales_id,
+            ':product_id' => (int)$item['product_id'],
+            ':qty'        => (int)$item['qty'],
+            ':price'      => (float)$item['price'],
+            ':amount'     => (float)$item['amount']
+        ]);
 
-        $invStmt->bind_param("ii", $item['qty'], $item['product_id']);
-        $invStmt->execute();
+        $stmtInv->execute([
+            ':qty'        => (int)$item['qty'],
+            ':product_id' => (int)$item['product_id']
+        ]);
     }
 
-    $itemStmt->close();
-    $invStmt->close();
-    $conn->commit();
+    $pdo->commit();
 
     echo json_encode([
         "status" => "success",
         "message" => "Transaction saved",
-        "transaction_id" => $sales_id
+        "transaction_id" => $sales_id,
+        "total_amount" => $total_amount
     ]);
 } catch (Exception $e) {
-    $conn->rollback();
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    http_response_code(400);
     echo json_encode([
         "status" => "error",
         "message" => $e->getMessage()
