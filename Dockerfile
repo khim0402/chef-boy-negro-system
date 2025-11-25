@@ -13,7 +13,8 @@ RUN apt-get update && apt-get install -y \
     libopenblas-dev \
     liblapack-dev \
     cmake \
-    libomp-dev
+    libomp-dev \
+    libpq-dev
 
 # Copy requirements.txt and install Python dependencies
 COPY requirements.txt /tmp/
