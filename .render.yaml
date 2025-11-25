@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: chefboynegro-php
+    env: php
+    buildCommand: ""
+    startCommand: ./start.sh
+    envVars:
+      - key: DB_HOST
+        value: dpg-d4i43m75r7bs73c7gvl0-a
+      - key: DB_PORT
+        value: 5432
+      - key: DB_NAME
+        value: chefboynegro
+      - key: DB_USER
+        value: chefboyuser
+      - key: DB_PASS
+        value: jA9GdmJDas6lbzWYzIybF50GqoHvOqwF
