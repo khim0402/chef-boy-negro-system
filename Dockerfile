@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y libpq-dev \
 COPY backend/public/ /var/www/html/
 
 # Copy backend PHP logic (db.php, endpoints)
-COPY backend/php/ /var/www/html/backend/
+COPY backend/php/ /var/www/html/php/
 
 RUN a2enmod rewrite
 COPY .htaccess /var/www/html/
