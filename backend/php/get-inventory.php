@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/db.php';
+require_once(__DIR__ . '/db.php');
 
 $sql = "SELECT product_id, category, name, price, qty, threshold FROM inventory";
 $result = $conn->query($sql);

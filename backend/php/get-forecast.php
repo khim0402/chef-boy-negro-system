@@ -1,4 +1,5 @@
 <?php
+require_once(__DIR__ . '/db.php');
 header('Content-Type: application/json');
 
 $DB_HOST = "dpg-d4i43m75r7bs73c7gvl0-a";  // Render/Postgres host

@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json');
-require_once("db.php");
+require_once(__DIR__ . '/db.php');
 
 $result = $conn->query("SELECT user_id, email, role, created_at FROM users ORDER BY user_id DESC");
 $users = [];

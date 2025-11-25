@@ -14,8 +14,9 @@ DB_USER = os.getenv("DB_USER", "chefboyuser")
 DB_PASS = os.getenv("DB_PASS", "jA9GdmJDas6lbzWYzIybF50GqoHvOqwF")
 DB_NAME = os.getenv("DB_NAME", "chefboynegro")
 
-DB_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
-engine = create_engine(DB_URL, pool_pre_ping=True)
+DB_URL = f"postgresql+psycopg2://{os.getenv('DB_USER')}:{os.getenv('DB_PASS')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
+
+engine = create_engine(DB_URL)
 
 app = Flask(__name__)
 
