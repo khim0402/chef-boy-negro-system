@@ -4,9 +4,10 @@ FROM php:8.2-apache
 RUN apt-get update && apt-get install -y libpq-dev \
     && docker-php-ext-install pdo pdo_pgsql
 
-# Python + build tools
+# Install Python + build tools
 RUN apt-get update && apt-get install -y \
     python3 python3-pip \
+    python3-venv \
     build-essential \
     python3-dev \
     gfortran \
@@ -16,9 +17,14 @@ RUN apt-get update && apt-get install -y \
     libomp-dev \
     libpq-dev
 
-# Install Python dependencies
+# Create venv and install requirements inside it
 COPY requirements.txt /tmp/
-RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
+RUN python3 -m venv /opt/venv \
+    && . /opt/venv/bin/activate \
+    && pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Add venv to PATH so php can call python scripts
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy frontend
 COPY backend/public/ /var/www/html/
