@@ -10,8 +10,10 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     python3-dev \
     gfortran \
-    libatlas-base-dev \
-    cmake
+    libopenblas-dev \
+    liblapack-dev \
+    cmake \
+    libomp-dev
 
 # Copy requirements.txt and install Python dependencies
 COPY requirements.txt /tmp/
