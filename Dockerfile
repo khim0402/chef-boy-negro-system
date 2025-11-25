@@ -17,13 +17,13 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt /tmp/
 RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
 
-# Copy frontend (HTML, CSS, JS)
+# Copy frontend
 COPY backend/public/ /var/www/html/
 
-# Copy backend PHP into /php (matches your JS fetch paths)
+# Copy backend PHP into /php
 COPY backend/php/ /var/www/html/php/
 
-# Enable Apache rewrites and set landing page
+# Enable Apache rewrites
 RUN a2enmod rewrite
 COPY .htaccess /var/www/html/
 
