@@ -11,10 +11,11 @@ let forecastChart;
 
 async function fetchForecastAll() {
   try {
+    // ✅ Absolute path to PHP
     const res = await fetch('/php/get-forecast.php', { cache: 'no-cache' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    if (data.status !== 'success') throw new Error('Invalid response');
+    if (data.status !== 'success') throw new Error(data.message || 'Invalid response');
 
     renderForecastChart(data.forecasts, data.actuals);
     renderMetrics(data);
@@ -127,7 +128,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 document.querySelector('.logout-btn')?.addEventListener('click', () => {
   if (confirm('Are you sure you want to logout?')) {
-    window.location.href = '../html/login.html';
+    window.location.href = '/html/login.html';
   }
-  
 });

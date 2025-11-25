@@ -13,18 +13,18 @@ function updateDateTime() {
 setInterval(updateDateTime, 1000);
 updateDateTime();
 
-// 🔄 Load sales from backend
+// 🔄 Load sales from backend (absolute path)
 function fetchSales(start = null, end = null) {
-  let url = '../php/get-sales.php';
+  let url = '/php/get-sales.php';
   if (start && end) {
-    url += `?start=${start}&end=${end}`;
+    url += `?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
   }
 
   fetch(url)
     .then(res => res.json())
     .then(data => {
       if (data.status !== 'success') {
-        alert('Failed to load sales data.');
+        alert(data.message || 'Failed to load sales data.');
         return;
       }
 
@@ -78,7 +78,7 @@ function filterSales() {
 // 🔚 Logout logic
 document.querySelector('.logout-btn').addEventListener('click', () => {
   if (confirm('Are you sure you want to logout?')) {
-    window.location.href = '../html/login.html';
+    window.location.href = '/html/login.html';
   }
 });
 
