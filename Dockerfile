@@ -1,19 +1,30 @@
-FROM python:3.12-slim
+FROM php:8.2-apache
 
-# Install PHP + Apache + Postgres PDO
+# Install Postgres PDO driver for PHP
+RUN apt-get update && apt-get install -y libpq-dev \
+    && docker-php-ext-install pdo pdo_pgsql
+
+# Install Python 3.12 + build tools
 RUN apt-get update && apt-get install -y \
-    php8.2 apache2 libapache2-mod-php8.2 \
-    php8.2-pgsql php8.2-cli libpq-dev \
+    python3.12 python3.12-venv python3.12-dev \
     build-essential gfortran libopenblas-dev liblapack-dev cmake libomp-dev
 
+# Create venv and install Python dependencies
 COPY requirements.txt /tmp/
-RUN pip install --upgrade pip setuptools wheel \
+RUN python3.12 -m venv /opt/venv \
+    && . /opt/venv/bin/activate \
+    && pip install --upgrade pip setuptools wheel \
     && pip install --no-cache-dir -r /tmp/requirements.txt
 
+# Add venv to PATH so PHP can call Python scripts
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy frontend and backend
 COPY backend/public/ /var/www/html/
 COPY backend/php/ /var/www/html/php/
+
+# Enable Apache rewrite
 RUN a2enmod rewrite
 COPY .htaccess /var/www/html/
 
 EXPOSE 80
-CMD ["apache2ctl", "-D", "FOREGROUND"]
