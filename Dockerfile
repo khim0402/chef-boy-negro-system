@@ -1,15 +1,18 @@
-FROM php:8.2-apache
+# Use official PHP image with PostgreSQL support
+FROM php:8.2-cli
 
+# Install PDO and Postgres driver
 RUN apt-get update && apt-get install -y libpq-dev \
     && docker-php-ext-install pdo pdo_pgsql
 
-# Serve your frontend and public PHP from the web root
-COPY ./backend/public/ /var/www/html/
+# Set working directory
+WORKDIR /app
 
-# Optional: serve additional backend/php endpoints under /api (if you want them accessible)
-# COPY ./backend/php/ /var/www/html/api/
+# Copy your PHP files
+COPY backend/php/ /app/
 
-# Make sure Apache treats both HTML and PHP as default index pages
-RUN echo "DirectoryIndex index.html index.php" >> /etc/apache2/apache2.conf
-
+# Expose port 80
 EXPOSE 80
+
+# Start PHP server
+CMD ["php", "-S", "0.0.0.0:80"]
