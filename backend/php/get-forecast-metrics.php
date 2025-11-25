@@ -3,10 +3,12 @@ header('Content-Type: application/json; charset=utf-8');
 require_once(__DIR__ . '/db.php');
 
 try {
-    $res = $conn->query("SELECT model_used, mape, rmse, mae, trained_on, forecast_horizon 
-                         FROM forecast_metrics ORDER BY created_at DESC LIMIT 1");
+    $stmt = $conn->query("SELECT model_used, mape, rmse, mae, trained_on, forecast_horizon 
+                          FROM forecast_metrics ORDER BY created_at DESC LIMIT 1");
 
-    if ($res && $row = $res->fetch_assoc()) {
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($row) {
         echo json_encode([
             "status" => "success",
             "metrics" => [

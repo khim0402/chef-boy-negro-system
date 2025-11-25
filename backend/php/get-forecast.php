@@ -1,20 +1,21 @@
 <?php
 header('Content-Type: application/json');
 
-$DB_HOST = "127.0.0.1";
+$DB_HOST = "dpg-d4i43m75r7bs73c7gvl0-a";  // Render/Postgres host
 $DB_NAME = "chefboynegro";
-$DB_USER = "root";
-$DB_PASS = "123456";
+$DB_USER = "chefboyuser";                // Postgres user
+$DB_PASS = "jA9GdmJDas6lbzWYzIybF50GqoHvOqwF"; // Postgres password
+$DB_PORT = "5432";
 
 try {
-  $pdo = new PDO("mysql:host=$DB_HOST;dbname=$DB_NAME;charset=utf8mb4", $DB_USER, $DB_PASS, [
+  $pdo = new PDO("pgsql:host=$DB_HOST;port=$DB_PORT;dbname=$DB_NAME", $DB_USER, $DB_PASS, [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
   ]);
 
   // Latest metrics
   $stmtM = $pdo->query("SELECT model_used, mape, rmse, mae, trained_on, forecast_horizon 
-                        FROM forecast_metrics ORDER BY id DESC LIMIT 1");
+                        FROM forecast_metrics ORDER BY created_at DESC LIMIT 1");
   $metricsRow = $stmtM->fetch();
   if (!$metricsRow) {
     $metricsRow = [
@@ -94,3 +95,4 @@ try {
   http_response_code(500);
   echo json_encode(["status" => "error", "message" => "Server error", "detail" => $e->getMessage()]);
 }
+?>

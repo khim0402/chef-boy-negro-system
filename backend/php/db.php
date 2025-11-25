@@ -1,17 +1,15 @@
 <?php
-$host = getenv('DB_HOST');
-$user = getenv('DB_USER');
-$pass = getenv('DB_PASS');
-$dbname = getenv('DB_NAME');
+$host = getenv('DB_HOST') ?: "dpg-d4i43m75r7bs73c7gvl0-a";
+$user = getenv('DB_USER') ?: "chefboyuser";
+$pass = getenv('DB_PASS') ?: "jA9GdmJDas6lbzWYzIybF50GqoHvOqwF";
+$dbname = getenv('DB_NAME') ?: "chefboynegro";
+$port = getenv('DB_PORT') ?: "5432";
 
 try {
-    $conn = new PDO("pgsql:host=$host;dbname=$dbname", $user, $pass);
+    $conn = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $user, $pass);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    // Optional: quick test query
-    $stmt = $conn->query("SELECT 1");
-    echo json_encode(["db" => "ok"]);
+    // Silent connector: no echo here
 } catch(PDOException $e) {
-    http_response_code(500);
-    echo json_encode(["error" => "DB connection failed", "detail" => $e->getMessage()]);
+    die("DB connection failed: " . $e->getMessage());
 }
 ?>

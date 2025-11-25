@@ -163,7 +163,10 @@ def upsert_product_forecast(product_id: int, forecasts: list):
             sql = text(f"""
                 INSERT INTO {TABLE_PRODUCT_FORECAST} (product_id, forecast_date, forecast_qty, model_used, created_at)
                 VALUES (:pid, :fdate, :qty, :model, NOW())
-                ON DUPLICATE KEY UPDATE forecast_qty = :qty, model_used = :model;
+                ON CONFLICT (product_id, forecast_date)
+                DO UPDATE SET forecast_qty = EXCLUDED.forecast_qty,
+                              model_used = EXCLUDED.model_used,
+                              created_at = NOW();
             """)
             conn.execute(sql, {"pid": product_id, "fdate": str(fdate), "qty": float(qty), "model": MODEL_NAME})
 
@@ -173,9 +176,12 @@ def upsert_sales_forecast(daily_pesos: dict):
     with engine.begin() as conn:
         for fdate, amount in sorted(daily_pesos.items()):
             sql = text(f"""
-                INSERT INTO {TABLE_SALES_FORECAST} (date, forecast_amount, model_used)
-                VALUES (:fdate, :amount, :model)
-                ON DUPLICATE KEY UPDATE forecast_amount = :amount, model_used = :model;
+                INSERT INTO {TABLE_SALES_FORECAST} (date, forecast_amount, model_used, created_at)
+                VALUES (:fdate, :amount, :model, NOW())
+                ON CONFLICT (date)
+                DO UPDATE SET forecast_amount = EXCLUDED.forecast_amount,
+                              model_used = EXCLUDED.model_used,
+                              created_at = NOW();
             """)
             conn.execute(sql, {"fdate": str(fdate), "amount": float(round(amount, 2)), "model": MODEL_NAME})
 
