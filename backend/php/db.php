@@ -7,7 +7,7 @@ $pass = getenv('DB_PASS');
 
 try {
     $conn = new PDO(
-        "pgsql:host=$host;port=$port;dbname=$dbname;sslmode=require",
+        "pgsql:host=$host;port=$port;dbname=$dbname;sslmode=require;sslrootcert=/etc/ssl/certs/ca-certificates.crt",
         $user,
         $pass,
         [
