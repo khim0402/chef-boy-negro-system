@@ -2,10 +2,11 @@
 require 'db.php'; // include your hybrid db.php
 
 try {
-    $stmt = $conn->query("SELECT NOW()");
-    $row = $stmt->fetch();
-    echo "✅ Database connection works. Current time: " . $row['now'];
+    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname;user=$user;password=$password";
+    $pdo = new PDO($dsn);
+    echo "Connected successfully!";
 } catch (PDOException $e) {
-    echo "❌ Query failed: " . $e->getMessage();
+    echo "Connection failed: " . $e->getMessage();
 }
+
 ?>
