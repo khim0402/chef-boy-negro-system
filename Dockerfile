@@ -1,7 +1,9 @@
 FROM php:8.2-cli
 
 # Install Postgres PDO driver + CA certificates
-RUN apt-get update && apt-get install -y libpq-dev ca-certificates \
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    ca-certificates \
     && docker-php-ext-install pdo pdo_pgsql \
     && update-ca-certificates
 
