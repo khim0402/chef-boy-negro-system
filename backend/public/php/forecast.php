@@ -1,8 +1,7 @@
 <?php
 header('Content-Type: application/json');
-require_once(__DIR__ . '/db.php');
+require_once(__DIR__ . '/../../php/db.php'); // ✅ go up two levels, then into php/db.php
 
-// Use relative path to Python script
 $output = shell_exec("python3 " . escapeshellarg(__DIR__ . '/../../python/forecast_sales.py') . " 2>&1");
 
 if ($output === null) {
@@ -10,9 +9,13 @@ if ($output === null) {
 } else {
     $data = json_decode($output, true);
     if (json_last_error() !== JSON_ERROR_NONE) {
-        echo json_encode(["status" => "error", "message" => "Invalid forecast output"]);
+        echo json_encode([
+            "status" => "error",
+            "message" => "Invalid forecast output",
+            "raw_output" => $output // ✅ show Python’s actual output for debugging
+        ]);
     } else {
-        echo $output; // Already JSON from forecast_sales.py
+        echo $output; // ✅ already JSON from Python
     }
 }
 ?>

@@ -251,8 +251,9 @@ def forecast_endpoint():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# ---- Local execution ----
 if __name__ == "__main__":
-    # Run the pipeline once and print JSON (for CLI or PHP shell_exec)
-    result = run_pipeline()
-    print(json.dumps({"status": "success", **result}, ensure_ascii=False))
+    try:
+        result = run_pipeline()
+        print(json.dumps({"status": "success", **result}, ensure_ascii=False))
+    except Exception as e:
+        print(json.dumps({"status": "error", "message": str(e)}))
