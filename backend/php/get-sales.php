@@ -13,7 +13,7 @@ try {
         $params = [':start' => $start, ':end' => $end];
     }
 
-    $stmt = $pdo->prepare("SELECT * FROM sales $where ORDER BY sale_date DESC");
+    $stmt = $pdo->query("SELECT * FROM sales ORDER BY created_at DESC");
     $stmt->execute($params);
     $sales = $stmt->fetchAll();
 

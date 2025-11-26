@@ -65,7 +65,7 @@ try {
         SELECT product_id, AVG(forecast_qty) AS avg_qty
         FROM product_forecast
         GROUP BY product_id
-    }")->fetchAll();
+    ")->fetchAll();
 
     $avgMap = [];
     foreach ($avgRows as $r) {
