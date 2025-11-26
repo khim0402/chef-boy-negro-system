@@ -9,23 +9,26 @@ $action = $_GET['action'] ?? 'view';
 $pipelineInfo = ["ran" => false];
 if ($action === 'run') {
     $pythonPathCandidates = ['python3', 'python'];
-    $scriptPath = realpath(__DIR__ . '/../python/forecast_sales.py');
-    if ($scriptPath && file_exists($scriptPath)) {
-        foreach ($pythonPathCandidates as $bin) {
-            $cmd = $bin . ' ' . escapeshellarg($scriptPath) . ' 2>&1';
-            $output = shell_exec($cmd);
-            if ($output !== null) {
-                $pipelineInfo = [
-                    "ran" => true,
-                    "cmd" => $cmd,
-                    "stdout" => $output
-                ];
-                break;
-            }
+    $scriptPath = '/opt/app/python/forecast_sales.py';
+
+if (file_exists($scriptPath)) {
+    $pythonPathCandidates = ['python3', 'python'];
+    foreach ($pythonPathCandidates as $bin) {
+        $cmd = $bin . ' ' . escapeshellarg($scriptPath) . ' 2>&1';
+        $output = shell_exec($cmd);
+        if ($output !== null) {
+            $pipelineInfo = [
+                "ran" => true,
+                "cmd" => $cmd,
+                "stdout" => $output
+            ];
+            break;
         }
-    } else {
-        $pipelineInfo = ["ran" => false, "message" => "forecast_sales.py not found", "path" => $scriptPath];
     }
+} else {
+    $pipelineInfo = ["ran" => false, "message" => "forecast_sales.py not found", "path" => $scriptPath];
+}
+
 }
 
 try {
