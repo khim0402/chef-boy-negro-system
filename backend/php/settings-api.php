@@ -22,8 +22,10 @@ try {
     }
 
     // ✅ Insert new user
-    $stmt = $pdo->prepare("INSERT INTO users (email, password, role, created_at)
-                           VALUES (:email, :password, :role, NOW())");
+    $stmt = $pdo->prepare("
+        INSERT INTO users (email, password, role, created_at)
+        VALUES (:email, :password, :role, NOW())
+    ");
     $stmt->execute([
         ':email'    => $email,
         ':password' => $hashed,
@@ -32,6 +34,7 @@ try {
 
     echo json_encode(["status" => "success"]);
 } catch (Exception $e) {
+    // Return the actual SQL error message for debugging
     echo json_encode(["status" => "error", "message" => $e->getMessage()]);
 }
 ?>

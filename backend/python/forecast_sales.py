@@ -157,7 +157,12 @@ def run_pipeline() -> dict:
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
         model, rmse = train_lightgbm(X_train, y_train, X_test, y_test)
 
-        forecasts = forecast_next_days(series, model, horizon=FORECAST_HORIZON_DAYS)
+        # ✅ Fallback if LightGBM fails
+        if model is None:
+            forecasts = [(date.today() + timedelta(days=i), float(y.mean())) 
+                        for i in range(1, FORECAST_HORIZON_DAYS+1)]
+        else:
+            forecasts = forecast_next_days(series, model, horizon=FORECAST_HORIZON_DAYS)
 
         price = avg_prices.get(pid, 0.0)
         for fdate, qty in forecasts:
@@ -206,6 +211,9 @@ def forecast_endpoint():
         result = run_pipeline()
         return jsonify({"status": "success", **result}), 200
     except Exception as e:
+        import traceback
+        print("Forecast error:", str(e))
+        print(traceback.format_exc())
         return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == "__main__":
