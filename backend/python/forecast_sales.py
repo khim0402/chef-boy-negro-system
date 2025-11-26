@@ -6,7 +6,7 @@ import numpy as np
 import lightgbm as lgb
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, mean_absolute_error
-from datetime import timedelta
+from datetime import date, timedelta
 from sqlalchemy import create_engine, text
 from flask import Flask, jsonify
 
@@ -91,7 +91,14 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
 def train_lightgbm(X_train, y_train, X_test, y_test):
     if X_train.empty or y_train.nunique() <= 1:
         return None, 0.0
-    model = lgb.LGBMRegressor(objective="regression", n_estimators=300, learning_rate=0.05, random_state=42)
+    model = lgb.LGBMRegressor(
+        objective="regression",
+        n_estimators=100,        # reduce from 300
+        num_leaves=31,           # limit tree size
+        learning_rate=0.1,       # faster convergence
+        max_depth=5,             # prevent deep trees
+        random_state=42
+    )
     model.fit(X_train, y_train, eval_set=[(X_test, y_test)], eval_metric="rmse")
     y_pred = model.predict(X_test)
     rmse = float(np.sqrt(mean_squared_error(y_test, y_pred)))
