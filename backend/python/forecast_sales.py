@@ -147,20 +147,18 @@ def forecast_next_days(df_series: pd.DataFrame, model, horizon=FORECAST_HORIZON_
 
 # ---- Persistence (cache forecasts) ----
 def write_sales_forecast(forecast_df: pd.DataFrame):
-    """Upsert sales forecasts into TABLE_SALES_FORECAST."""
+    """Replace old forecasts with the latest run."""
     if forecast_df.empty:
         return
     with engine.begin() as conn:
-        # Clear overlapping horizon (optional: only delete target horizon)
+        # Delete overlapping horizon before inserting new values
         conn.execute(text(f"DELETE FROM {TABLE_SALES_FORECAST} WHERE date >= :start_date"), {
             "start_date": forecast_df["date"].min().date()
         })
-        # Bulk insert
         rows = [
             {"date": pd.to_datetime(r["date"]).date(), "forecast_amount": float(r["forecast_amount"])}
             for _, r in forecast_df.iterrows()
         ]
-        # Use many insert
         conn.execute(
             text(f"INSERT INTO {TABLE_SALES_FORECAST} (date, forecast_amount) VALUES (:date, :forecast_amount)"),
             rows
