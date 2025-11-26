@@ -26,6 +26,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copy frontend and backend
 COPY backend/public/ /var/www/html/
 COPY backend/php/ /var/www/html/php/
+COPY backend/python/ /var/www/html/python/
 
 # Enable Apache rewrite
 RUN a2enmod rewrite

@@ -377,10 +377,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const items = Array.isArray(inventoryData) ? inventoryData : inventoryData.items;
                 if (!Array.isArray(items)) throw new Error("Invalid inventory data");
                 window.updateInventoryUI({ items });
-              })
-              .catch(err => {
-                alert("Failed to load inventory data.");
-                console.error("Inventory sync error:", err.message);
               });
 
           } else {
