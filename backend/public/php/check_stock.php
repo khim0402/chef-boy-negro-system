@@ -8,20 +8,31 @@ $orderItems = $data['orderItems'] ?? [];
 $outOfStock = [];
 
 try {
-    $stmt = $pdo->prepare("SELECT qty, name FROM inventory WHERE product_id = :product_id");
+    // Select both possible name columns defensively
+    $stmt = $pdo->prepare("SELECT qty, name, product_name FROM inventory WHERE product_id = :product_id");
+
     foreach ($orderItems as $item) {
         $product_id = (int)($item['product_id'] ?? 0);
         $qty = (int)($item['qty'] ?? 0);
+        $fallbackName = $item['name'] ?? "Unknown";
 
         if ($product_id <= 0 || $qty <= 0) {
-            $outOfStock[] = $item['name'] ?? "Unknown";
+            $outOfStock[] = $fallbackName;
             continue;
         }
 
         $stmt->execute([':product_id' => $product_id]);
         $row = $stmt->fetch();
-        if (!$row || $row['qty'] < $qty) {
-            $outOfStock[] = $row['name'] ?? $item['name'] ?? "Unknown";
+
+        // Determine display name safely
+        $rowName = null;
+        if ($row) {
+            if (isset($row['name']) && $row['name'] !== null) $rowName = $row['name'];
+            if (isset($row['product_name']) && $row['product_name'] !== null) $rowName = $row['product_name'];
+        }
+
+        if (!$row || (int)$row['qty'] < $qty) {
+            $outOfStock[] = $rowName ?: $fallbackName;
         }
     }
 
@@ -33,4 +44,3 @@ try {
 } catch (Exception $e) {
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
-?>
