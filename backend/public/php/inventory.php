@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
-require_once(__DIR__ . '/../../db.php');
+require_once(__DIR__ . '/../db.php');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode(file_get_contents("php://input"), true);
@@ -40,8 +40,8 @@ try {
                          FROM inventory ORDER BY product_id ASC");
     $items = $stmt->fetchAll();
     echo json_encode([
-        "status" => "success",
-        "inventory" => $items
+    "status" => "success",
+    "inventory" => $items
     ]);
 } catch (Exception $e) {
     echo json_encode(["status" => "error", "message" => $e->getMessage()]);

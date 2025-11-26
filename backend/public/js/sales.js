@@ -47,7 +47,7 @@ function renderSales(sales) {
     row.innerHTML = `
       <td>${sale.date}</td>
       <td>${sale.product}</td>
-      <td>${sale.method}</td>
+      <td>${sale.payment_method}</td>
       <td>${sale.qty}</td>
       <td>₱${parseFloat(sale.amount).toFixed(2)}</td>
     `;
