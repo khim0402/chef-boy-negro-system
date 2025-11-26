@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from datetime import timedelta
 from sqlalchemy import create_engine, text
+from flask import Flask, jsonify
 
 # ---- Use PG* env vars (same as PHP) ----
 DB_HOST = os.getenv("PGHOST", "")
@@ -231,7 +232,27 @@ def run_pipeline() -> dict:
         "horizon": FORECAST_HORIZON_DAYS
     }
 
+app = Flask(__name__)
+
+@app.route("/health", methods=["GET"])
+def health():
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return jsonify({"status": "ok"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/forecast", methods=["GET"])
+def forecast_endpoint():
+    try:
+        result = run_pipeline()
+        return jsonify({"status": "success", **result}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# ---- Local execution ----
 if __name__ == "__main__":
-    # Run the pipeline once, print JSON for PHP to capture if needed
+    # Run the pipeline once and print JSON (for CLI or PHP shell_exec)
     result = run_pipeline()
     print(json.dumps({"status": "success", **result}, ensure_ascii=False))
