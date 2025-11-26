@@ -31,9 +31,6 @@ MODEL_NAME = "LightGBM"
 TABLE_INVENTORY = "inventory"
 TABLE_SALES_ITEMS = "sales_items"
 TABLE_SALES = "sales"
-TABLE_PRODUCT_FORECAST = "product_forecast"   # columns: product_id, forecast_date, forecast_qty, model_used, created_at
-TABLE_SALES_FORECAST = "sales_forecast"       # columns: date, forecast_amount, model_used, created_at
-TABLE_FORECAST_METRICS = "forecast_metrics"   # columns: model_used, mape, rmse, mae, trained_on, forecast_horizon, created_at
 
 # ---- Data access ----
 def fetch_inventory() -> pd.DataFrame:
@@ -44,9 +41,9 @@ def fetch_inventory() -> pd.DataFrame:
     return df[df["product_id"].astype(str) != "product_id"].copy()
 
 def fetch_product_sales_series(product_id: int) -> pd.DataFrame:
-    sql = f"""
+    sql = """
         SELECT DATE(created_at) AS date, COALESCE(SUM(qty), 0) AS qty_sold
-        FROM {TABLE_SALES_ITEMS}
+        FROM sales_items
         WHERE product_id = :pid
         GROUP BY DATE(created_at)
         ORDER BY DATE(created_at) ASC;
@@ -58,9 +55,9 @@ def fetch_product_sales_series(product_id: int) -> pd.DataFrame:
     return df.set_index("date").asfreq("D", fill_value=0).reset_index()
 
 def fetch_actual_sales_series() -> pd.DataFrame:
-    sql = f"""
+    sql = """
         SELECT DATE(created_at) AS date, COALESCE(SUM(total_amount), 0) AS actual_sales
-        FROM {TABLE_SALES}
+        FROM sales
         GROUP BY DATE(created_at)
         ORDER BY DATE(created_at) ASC;
     """
@@ -69,9 +66,9 @@ def fetch_actual_sales_series() -> pd.DataFrame:
     return df
 
 def fetch_avg_prices() -> dict:
-    sql = f"""
+    sql = """
         SELECT product_id, AVG(price) AS avg_price
-        FROM {TABLE_SALES_ITEMS}
+        FROM sales_items
         WHERE price IS NOT NULL AND price > 0
         GROUP BY product_id;
     """
@@ -92,6 +89,8 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     return df.dropna().reset_index(drop=True)
 
 def train_lightgbm(X_train, y_train, X_test, y_test):
+    if X_train.empty or y_train.nunique() <= 1:
+        return None, 0.0
     model = lgb.LGBMRegressor(objective="regression", n_estimators=300, learning_rate=0.05, random_state=42)
     model.fit(X_train, y_train, eval_set=[(X_test, y_test)], eval_metric="rmse")
     y_pred = model.predict(X_test)
@@ -122,52 +121,14 @@ def forecast_next_days(df_series: pd.DataFrame, model, horizon=FORECAST_HORIZON_
             "roll7": roll7
         }])
 
-        yhat = max(0.0, float(model.predict(feat)[0]))
+        if model:
+            yhat = max(0.0, float(model.predict(feat)[0]))
+        else:
+            yhat = float(np.mean(last_values))  # fallback
         outputs.append((next_date.date(), yhat))
         last_values.append(yhat)
 
     return outputs
-
-# ---- Persistence (upserts) ----
-def upsert_product_forecast(product_id: int, forecasts: list):
-    with engine.begin() as conn:
-        for fdate, qty in forecasts:
-            sql = text(f"""
-                INSERT INTO {TABLE_PRODUCT_FORECAST} (product_id, forecast_date, forecast_qty, model_used, created_at)
-                VALUES (:pid, :fdate, :qty, :model, NOW())
-                ON CONFLICT (product_id, forecast_date)
-                DO UPDATE SET forecast_qty = EXCLUDED.forecast_qty,
-                              model_used = EXCLUDED.model_used,
-                              created_at = NOW();
-            """)
-            conn.execute(sql, {"pid": product_id, "fdate": str(fdate), "qty": float(qty), "model": MODEL_NAME})
-
-def upsert_sales_forecast(daily_pesos: dict):
-    with engine.begin() as conn:
-        for fdate, amount in sorted(daily_pesos.items()):
-            sql = text(f"""
-                INSERT INTO {TABLE_SALES_FORECAST} (date, forecast_amount, model_used, created_at)
-                VALUES (:fdate, :amount, :model, NOW())
-                ON CONFLICT (date)
-                DO UPDATE SET forecast_amount = EXCLUDED.forecast_amount,
-                              model_used = EXCLUDED.model_used,
-                              created_at = NOW();
-            """)
-            conn.execute(sql, {"fdate": str(fdate), "amount": float(round(amount, 2)), "model": MODEL_NAME})
-
-def insert_forecast_metrics(mape: float, rmse: float, mae: float):
-    with engine.begin() as conn:
-        sql = text(f"""
-            INSERT INTO {TABLE_FORECAST_METRICS} (model_used, mape, rmse, mae, trained_on, forecast_horizon, created_at)
-            VALUES (:model, :mape, :rmse, :mae, NOW(), :horizon, NOW());
-        """)
-        conn.execute(sql, {
-            "model": MODEL_NAME,
-            "mape": float(round(mape, 4)),
-            "rmse": float(round(rmse, 4)),
-            "mae": float(round(mae, 4)),
-            "horizon": int(FORECAST_HORIZON_DAYS)
-        })
 
 # ---- Orchestration ----
 def run_pipeline() -> dict:
@@ -197,7 +158,6 @@ def run_pipeline() -> dict:
         model, rmse = train_lightgbm(X_train, y_train, X_test, y_test)
 
         forecasts = forecast_next_days(series, model, horizon=FORECAST_HORIZON_DAYS)
-        upsert_product_forecast(pid, forecasts)
 
         price = avg_prices.get(pid, 0.0)
         for fdate, qty in forecasts:
@@ -205,14 +165,11 @@ def run_pipeline() -> dict:
 
         processed_products += 1
 
-    # Save aggregated daily pesos forecast
-    upsert_sales_forecast(daily_totals_pesos)
-
-    # Metrics on overlapping dates
+    # Metrics
     actual_df = fetch_actual_sales_series()
-    forecast_df = pd.read_sql(f"SELECT date, forecast_amount FROM {TABLE_SALES_FORECAST} ORDER BY date ASC;", engine)
-    actual_df["date"] = pd.to_datetime(actual_df["date"])
+    forecast_df = pd.DataFrame(list(daily_totals_pesos.items()), columns=["date", "forecast_amount"])
     forecast_df["date"] = pd.to_datetime(forecast_df["date"])
+    actual_df["date"] = pd.to_datetime(actual_df["date"])
 
     merged = pd.merge(actual_df, forecast_df, on="date", how="inner")
     if merged.empty:
@@ -223,15 +180,15 @@ def run_pipeline() -> dict:
         safe_actual = merged["actual_sales"].replace(0, np.nan)
         mape = float(np.nanmean(np.abs((safe_actual - merged["forecast_amount"]) / safe_actual)) * 100)
 
-    insert_forecast_metrics(mape, rmse, mae)
-
     return {
         "processed_products": processed_products,
         "skipped_products": skipped_products,
         "metrics": {"rmse": rmse, "mae": mae, "mape": mape},
-        "horizon": FORECAST_HORIZON_DAYS
+        "horizon": FORECAST_HORIZON_DAYS,
+        "forecast": forecast_df.to_dict(orient="records")
     }
 
+# ---- Flask App ----
 app = Flask(__name__)
 
 @app.route("/health", methods=["GET"])
