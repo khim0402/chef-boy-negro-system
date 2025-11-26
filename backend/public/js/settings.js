@@ -1,6 +1,13 @@
 function updateDateTime() {
   const now = new Date();
-  const options = { hour: 'numeric', minute: 'numeric', hour12: true, year: 'numeric', month: 'short', day: 'numeric' };
+  const options = {
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: true,
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  };
   const el = document.getElementById('datetime');
   if (el) el.textContent = now.toLocaleString('en-PH', options);
 }
@@ -17,6 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const response = await fetch("/php/get-users.php");
       const users = await response.json();
+
       userTableBody.innerHTML = "";
       users.forEach(user => {
         const row = document.createElement("tr");
@@ -54,7 +62,8 @@ document.addEventListener("DOMContentLoaded", () => {
         form.reset();
         loadUsers();
       } else {
-        messageBox.textContent = "❌ Failed to add user";
+        // Show backend error message (duplicate email, invalid role, etc.)
+        messageBox.textContent = "❌ " + (result.message || "Failed to add user");
         messageBox.className = "error";
       }
     } catch (err) {
@@ -72,13 +81,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const response = await fetch("/php/delete-user.php", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "id=" + id
+          body: "id=" + encodeURIComponent(id)
         });
         const result = await response.json();
         if (result.status === "success") {
           loadUsers();
         } else {
-          messageBox.textContent = "❌ Failed to delete user";
+          messageBox.textContent = "❌ " + (result.message || "Failed to delete user");
           messageBox.className = "error";
         }
       } catch (err) {
