@@ -60,10 +60,12 @@ window.addEventListener('DOMContentLoaded', () => {
     .then(res => res.json())
     .then(data => {
       console.log("Inventory data:", data); // Debug
-      // Normalize data format
-      inventory = Array.isArray(data) ? data : (data.items ?? []);
-      // Only render restock alerts here
-      renderRestockAlerts();
+      if (data.status === 'success') {
+        inventory = Array.isArray(data.inventory) ? data.inventory : [];
+        renderRestockAlerts();
+      } else {
+        console.error("Inventory fetch error:", data.message);
+      }
     })
     .catch(err => {
       console.error('Failed to fetch inventory for dashboard:', err);

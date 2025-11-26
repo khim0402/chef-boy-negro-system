@@ -2,7 +2,7 @@
 header('Content-Type: application/json');
 require_once(__DIR__ . '/db.php');
 
-$output = shell_exec("C:/xampp/htdocs/Chef Boy Negro/venv/Scripts/python " . escapeshellarg(__DIR__ . '/../../python/forecast_sales.py') . " 2>&1");
+$output = shell_exec("\"C:/xampp/htdocs/Chef Boy Negro/venv/Scripts/python\" " . escapeshellarg(__DIR__ . '/../../python/forecast_sales.py') . " 2>&1");
 
 if ($output === null) {
     echo json_encode(["status" => "error", "message" => "Forecast script failed"]);
