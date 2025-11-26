@@ -125,10 +125,8 @@ async function runForecast() {
     const data = await res.json();
     if (data.status === 'success') {
       alert('✅ Forecast updated!');
-      // Re-render with new data
-      renderForecastChart(data.forecasts, data.actuals);
-      renderMetrics(data);
-      renderInventorySummary(data.inventory_summary);
+      // 🔄 Re-fetch everything fresh from DB
+      await fetchForecastAll();
     } else {
       alert('❌ Forecast failed: ' + data.message);
     }
@@ -137,6 +135,7 @@ async function runForecast() {
     alert('Error running forecast.');
   }
 }
+
 function escapeHtml(str) {
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
