@@ -30,7 +30,12 @@ try {
         $sales = $stmt->fetchAll();
     } else {
         $sales = $pdo->query("
-            SELECT s.created_at AS date, si.qty, si.amount, s.payment_method, i.name AS product
+            SELECT 
+            s.created_at AS date,
+            si.qty,
+            si.amount,
+            COALESCE(s.payment_method, 'N/A') AS payment_method,
+            i.name AS product
             FROM sales_items si
             JOIN sales s ON si.sales_id = s.id
             JOIN inventory i ON si.product_id = i.product_id

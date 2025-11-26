@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json');
-require_once(__DIR__ . '/../../db.php');
+require_once(__DIR__ . '/../db.php');
 
 // Use relative path to Python script
 $output = shell_exec("python3 " . escapeshellarg(__DIR__ . '/../../python/forecast_sales.py') . " 2>&1");
