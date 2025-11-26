@@ -8,8 +8,7 @@ $orderItems = $data['orderItems'] ?? [];
 $outOfStock = [];
 
 try {
-    // Select both possible name columns defensively
-    $stmt = $pdo->prepare("SELECT qty, name, product_name FROM inventory WHERE product_id = :product_id");
+    $stmt = $pdo->prepare("SELECT qty, name FROM inventory WHERE product_id = :product_id");
 
     foreach ($orderItems as $item) {
         $product_id = (int)($item['product_id'] ?? 0);
@@ -24,15 +23,8 @@ try {
         $stmt->execute([':product_id' => $product_id]);
         $row = $stmt->fetch();
 
-        // Determine display name safely
-        $rowName = null;
-        if ($row) {
-            if (isset($row['name']) && $row['name'] !== null) $rowName = $row['name'];
-            if (isset($row['product_name']) && $row['product_name'] !== null) $rowName = $row['product_name'];
-        }
-
         if (!$row || (int)$row['qty'] < $qty) {
-            $outOfStock[] = $rowName ?: $fallbackName;
+            $outOfStock[] = $row['name'] ?? $fallbackName;
         }
     }
 
@@ -44,3 +36,4 @@ try {
 } catch (Exception $e) {
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
+?>\
