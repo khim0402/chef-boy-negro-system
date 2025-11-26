@@ -3,26 +3,29 @@
 require_once(__DIR__ . '/db.php');
 header('Content-Type: application/json');
 
-// Try to run Python pipeline first (so data is fresh)
-$pythonPathCandidates = ['python3', 'python']; // Render may use either
-$scriptPath = realpath(__DIR__ . '/../python/forecast_sales.py');
-$pipelineInfo = ["ran" => false];
+$action = $_GET['action'] ?? 'view';
 
-if ($scriptPath && file_exists($scriptPath)) {
-    foreach ($pythonPathCandidates as $bin) {
-        $cmd = $bin . ' ' . escapeshellarg($scriptPath) . ' 2>&1';
-        $output = shell_exec($cmd);
-        if ($output !== null) {
-            $pipelineInfo = [
-                "ran" => true,
-                "cmd" => $cmd,
-                "stdout" => $output
-            ];
-            break;
+// Optional: run Python pipeline if requested
+$pipelineInfo = ["ran" => false];
+if ($action === 'run') {
+    $pythonPathCandidates = ['python3', 'python'];
+    $scriptPath = realpath(__DIR__ . '/../python/forecast_sales.py');
+    if ($scriptPath && file_exists($scriptPath)) {
+        foreach ($pythonPathCandidates as $bin) {
+            $cmd = $bin . ' ' . escapeshellarg($scriptPath) . ' 2>&1';
+            $output = shell_exec($cmd);
+            if ($output !== null) {
+                $pipelineInfo = [
+                    "ran" => true,
+                    "cmd" => $cmd,
+                    "stdout" => $output
+                ];
+                break;
+            }
         }
+    } else {
+        $pipelineInfo = ["ran" => false, "message" => "forecast_sales.py not found", "path" => $scriptPath];
     }
-} else {
-    $pipelineInfo = ["ran" => false, "message" => "forecast_sales.py not found", "path" => $scriptPath];
 }
 
 try {
@@ -51,6 +54,10 @@ try {
         FROM sales_forecast
         ORDER BY date ASC
     ")->fetchAll();
+    foreach ($forecasts as &$f) {
+        $f['date'] = date("Y-m-d", strtotime($f['date']));
+        $f['forecast_amount'] = (float)$f['forecast_amount'];
+    }
 
     // Actuals
     $actuals = $pdo->query("
@@ -59,14 +66,17 @@ try {
         GROUP BY DATE(created_at)
         ORDER BY DATE(created_at) ASC
     ")->fetchAll();
+    foreach ($actuals as &$a) {
+        $a['date'] = date("Y-m-d", strtotime($a['date']));
+        $a['actual_sales'] = (float)$a['actual_sales'];
+    }
 
-    // Inventory summary: compare avg forecast qty vs current qty and threshold
+    // Inventory summary
     $avgRows = $pdo->query("
         SELECT product_id, AVG(forecast_qty) AS avg_qty
         FROM product_forecast
         GROUP BY product_id
     ")->fetchAll();
-
     $avgMap = [];
     foreach ($avgRows as $r) {
         $avgMap[(int)$r['product_id']] = (float)$r['avg_qty'];

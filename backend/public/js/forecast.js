@@ -118,6 +118,25 @@ function renderInventorySummary(items = []) {
   });
 }
 
+// 👉 Place runForecast here
+async function runForecast() {
+  try {
+    const res = await fetch('/php/get-forecast.php?action=run', { method: 'POST' });
+    const data = await res.json();
+    if (data.status === 'success') {
+      alert('✅ Forecast updated!');
+      // Re-render with new data
+      renderForecastChart(data.forecasts, data.actuals);
+      renderMetrics(data);
+      renderInventorySummary(data.inventory_summary);
+    } else {
+      alert('❌ Forecast failed: ' + data.message);
+    }
+  } catch (err) {
+    console.error('Run forecast error:', err);
+    alert('Error running forecast.');
+  }
+}
 function escapeHtml(str) {
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
