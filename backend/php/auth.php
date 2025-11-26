@@ -12,7 +12,8 @@ try {
     $stmt->execute([':email' => $email]);
     $row = $stmt->fetch();
 
-    if ($row && password_verify($password, $row['password'])) {
+    // Compare SHA-256 hash of input password with stored hash
+    if ($row && hash('sha256', $password) === $row['password']) {
         $_SESSION['user_id'] = $row['user_id'];
         $_SESSION['email'] = $email;
         $_SESSION['role'] = strtolower($row['role']);
