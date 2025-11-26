@@ -258,8 +258,14 @@ def run_pipeline(inventory_slice: pd.DataFrame | None = None) -> dict:
         mape = float(np.nanmean(np.abs((safe_actual - merged["forecast_amount"]) / safe_actual)) * 100)
 
     # Cache sales forecasts and metrics
+    # Inside run_pipeline(), after forecast_df is built and metrics are calculated:
     if not forecast_df.empty:
+        # Format dates cleanly
+        forecast_df["date"] = forecast_df["date"].dt.strftime("%Y-%m-%d")
+        # Overwrite old forecasts
         write_sales_forecast(forecast_df)
+
+    # Always update metrics
     write_forecast_metrics(rmse, mae, mape, processed_products)
 
     return {

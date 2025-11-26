@@ -1,5 +1,4 @@
 <?php
-// /var/www/html/php/forecast.php
 header('Content-Type: application/json');
 
 $BASE_URL = "https://chefboynegro-forecast.onrender.com";
@@ -35,3 +34,4 @@ if ($action === "run") {
     $url = $BASE_URL . "/forecast";
     call_endpoint($url, "GET", 20);
 }
+?>
