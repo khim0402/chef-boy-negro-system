@@ -41,24 +41,43 @@ try {
         VALUES (:sales_id, :product_id, :qty, :price, :amount)
     ");
     $stmtInv = $pdo->prepare("
-        UPDATE inventory SET qty = GREATEST(0, qty - :qty)
+        UPDATE inventory SET qty = qty - :qty
         WHERE product_id = :product_id
     ");
+    $stmtCheck = $pdo->prepare("SELECT qty FROM inventory WHERE product_id = :product_id");
 
     foreach ($items as $item) {
         if (!empty($item['voided'])) continue;
 
+        $product_id = (int)$item['product_id'];
+        $qty        = (int)$item['qty'];
+        $price      = (float)$item['price'];
+        $amount     = (float)$item['amount'];
+
+        if ($product_id <= 0 || $qty <= 0) {
+            throw new Exception("Invalid product or quantity in items.");
+        }
+
+        // Check stock before deducting
+        $stmtCheck->execute([':product_id' => $product_id]);
+        $stock = (int)$stmtCheck->fetchColumn();
+        if ($stock < $qty) {
+            throw new Exception("Insufficient stock for product ID $product_id");
+        }
+
+        // Insert item
         $stmtItem->execute([
             ':sales_id'   => $sales_id,
-            ':product_id' => (int)$item['product_id'],
-            ':qty'        => (int)$item['qty'],
-            ':price'      => (float)$item['price'],
-            ':amount'     => (float)$item['amount']
+            ':product_id' => $product_id,
+            ':qty'        => $qty,
+            ':price'      => $price,
+            ':amount'     => $amount
         ]);
 
+        // Update inventory
         $stmtInv->execute([
-            ':qty'        => (int)$item['qty'],
-            ':product_id' => (int)$item['product_id']
+            ':qty'        => $qty,
+            ':product_id' => $product_id
         ]);
     }
 

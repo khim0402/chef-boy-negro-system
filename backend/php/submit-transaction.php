@@ -1,10 +1,9 @@
 <?php
+header('Content-Type: application/json; charset=utf-8');
 require_once(__DIR__ . '/db.php');
-header('Content-Type: application/json');
 
 try {
     $input = json_decode(file_get_contents('php://input'), true);
-
     if (!isset($input['items']) || !is_array($input['items'])) {
         throw new Exception("Invalid items array.");
     }
@@ -17,18 +16,13 @@ try {
     $items = $input['items'];
     $total_amount = 0.0;
 
-    // Compute total (skip voided items)
     foreach ($items as $item) {
-        if (!empty($item['voided'])) {
-            continue;
-        }
-        $amount = (float)($item['amount'] ?? 0);
-        $total_amount += $amount;
+        if (!empty($item['voided'])) continue;
+        $total_amount += (float)($item['amount'] ?? 0);
     }
 
     $pdo->beginTransaction();
 
-    // Insert sale and get ID (Postgres RETURNING)
     $stmtSale = $pdo->prepare("
         INSERT INTO sales (payment_method, total_amount, created_at)
         VALUES (:payment_method, :total_amount, NOW())
@@ -36,37 +30,37 @@ try {
     ");
     $stmtSale->execute([
         ':payment_method' => $payment_method,
-        ':total_amount' => $total_amount
+        ':total_amount'   => $total_amount
     ]);
     $sales_id = (int)$stmtSale->fetchColumn();
 
-    // Prepare item insert and inventory update
     $stmtItem = $pdo->prepare("
         INSERT INTO sales_items (sales_id, product_id, qty, price, amount)
         VALUES (:sales_id, :product_id, :qty, :price, :amount)
     ");
-
     $stmtInv = $pdo->prepare("
-        UPDATE inventory
-        SET qty = GREATEST(0, qty - :qty)
-        WHERE product_id = :product_id
+        UPDATE inventory SET qty = qty - :qty WHERE product_id = :product_id
     ");
+    $stmtCheck = $pdo->prepare("SELECT qty FROM inventory WHERE product_id = :product_id");
 
     foreach ($items as $item) {
-        if (!empty($item['voided'])) {
-            continue;
-        }
+        if (!empty($item['voided'])) continue;
 
-        $product_id = (int)($item['product_id'] ?? 0);
-        $qty        = (int)($item['qty'] ?? 0);
-        $price      = (float)($item['price'] ?? 0);
-        $amount     = (float)($item['amount'] ?? 0);
+        $product_id = (int)$item['product_id'];
+        $qty        = (int)$item['qty'];
+        $price      = (float)$item['price'];
+        $amount     = (float)$item['amount'];
 
         if ($product_id <= 0 || $qty <= 0) {
             throw new Exception("Invalid product or quantity in items.");
         }
 
-        // Insert item
+        $stmtCheck->execute([':product_id' => $product_id]);
+        $stock = (int)$stmtCheck->fetchColumn();
+        if ($stock < $qty) {
+            throw new Exception("Insufficient stock for product ID $product_id");
+        }
+
         $stmtItem->execute([
             ':sales_id'   => $sales_id,
             ':product_id' => $product_id,
@@ -75,7 +69,6 @@ try {
             ':amount'     => $amount
         ]);
 
-        // Update inventory
         $stmtInv->execute([
             ':qty'        => $qty,
             ':product_id' => $product_id
@@ -91,8 +84,8 @@ try {
         "total_amount" => $total_amount
     ]);
 } catch (Exception $e) {
-    if ($pdo && $pdo->inTransaction()) {
-        $pdo->rollback();
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
     }
     http_response_code(400);
     echo json_encode([

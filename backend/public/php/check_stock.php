@@ -8,12 +8,20 @@ $orderItems = $data['orderItems'] ?? [];
 $outOfStock = [];
 
 try {
-    $stmt = $pdo->prepare("SELECT qty FROM inventory WHERE name = :name");
+    $stmt = $pdo->prepare("SELECT qty, name FROM inventory WHERE product_id = :product_id");
     foreach ($orderItems as $item) {
-        $stmt->execute([':name' => $item['name']]);
+        $product_id = (int)($item['product_id'] ?? 0);
+        $qty = (int)($item['qty'] ?? 0);
+
+        if ($product_id <= 0 || $qty <= 0) {
+            $outOfStock[] = $item['name'] ?? "Unknown";
+            continue;
+        }
+
+        $stmt->execute([':product_id' => $product_id]);
         $row = $stmt->fetch();
-        if (!$row || $row['qty'] < (int)$item['qty']) {
-            $outOfStock[] = $item['name'];
+        if (!$row || $row['qty'] < $qty) {
+            $outOfStock[] = $row['name'] ?? $item['name'] ?? "Unknown";
         }
     }
 
