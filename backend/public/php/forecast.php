@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json');
-require_once(__DIR__ . '/../../php/db.php'); // ✅ go up two levels, then into php/db.php
+require_once(__DIR__ . '/db.php');
 
 $output = shell_exec("python3 " . escapeshellarg(__DIR__ . '/../../python/forecast_sales.py') . " 2>&1");
 
