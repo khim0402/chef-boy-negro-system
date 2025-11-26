@@ -16,7 +16,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($action === 'add') {
             $stmt = $pdo->prepare("UPDATE inventory SET qty = qty + :qty WHERE product_id = :product_id");
         } elseif ($action === 'remove') {
-            // Prevent overselling
             $stmtCheck = $pdo->prepare("SELECT qty FROM inventory WHERE product_id = :product_id");
             $stmtCheck->execute([':product_id' => $product_id]);
             $stock = (int)$stmtCheck->fetchColumn();
@@ -40,7 +39,10 @@ try {
     $stmt = $pdo->query("SELECT product_id, name, category, price, qty, threshold 
                          FROM inventory ORDER BY product_id ASC");
     $items = $stmt->fetchAll();
-    echo json_encode($items);
+    echo json_encode([
+        "status" => "success",
+        "inventory" => $items
+    ]);
 } catch (Exception $e) {
     echo json_encode(["status" => "error", "message" => $e->getMessage()]);
 }

@@ -37,9 +37,13 @@ window.addEventListener('DOMContentLoaded', () => {
     fetch('../php/inventory.php')
       .then(res => res.json())
       .then(data => {
-        console.log('Fetched inventory:', data); // ✅ Debug line
-        inventory = data;
-        renderInventory();
+        if (data.status === 'success') {
+          console.log('Fetched inventory:', data.inventory);
+          inventory = data.inventory;
+          renderInventory();
+        } else {
+          alert(data.message);
+        }
       })
       .catch(err => {
         console.error('Inventory fetch failed:', err);
@@ -76,8 +80,8 @@ function renderInventory(searchFilter = '', categoryFilter = '') {
       <td>₱${item.price}</td>
       <td>${item.qty}</td>
       <td>
-        <button class="action-btn" data-action="add" data-name="${item.name}">Add</button>
-        <button class="action-btn" data-action="remove" data-name="${item.name}">Remove</button>
+        <button class="action-btn" data-action="add" data-id="${item.product_id}" data-name="${item.name}">Add</button>
+        <button class="action-btn" data-action="remove" data-id="${item.product_id}" data-name="${item.name}">Remove</button>
       </td>
     `;
     tbody.appendChild(row);
@@ -96,64 +100,63 @@ document.getElementById('category-filter').addEventListener('change', (e) => {
   renderInventory(search, e.target.value);
 });
 
-  // 🧩 Modal logic
-  const stockInModal = document.getElementById('stock-in-modal');
-  const stockOutModal = document.getElementById('stock-out-modal');
+  // ✅ Store product_id when opening modal
+let currentProductId = null;
 
-  document.addEventListener('click', (e) => {
-    if (e.target.matches('.action-btn')) {
-      const action = e.target.dataset.action;
-      const name = e.target.dataset.name;
+document.addEventListener('click', (e) => {
+  if (e.target.matches('.action-btn')) {
+    const action = e.target.dataset.action;
+    const name = e.target.dataset.name;
+    currentProductId = parseInt(e.target.dataset.id);
 
-      if (action === 'add') {
-        document.getElementById('in-name').value = name;
-        stockInModal.classList.remove('hidden');
-      } else if (action === 'remove') {
-        document.getElementById('out-name').value = name;
-        stockOutModal.classList.remove('hidden');
-      }
+    if (action === 'add') {
+      document.getElementById('in-name').value = name;
+      stockInModal.classList.remove('hidden');
+    } else if (action === 'remove') {
+      document.getElementById('out-name').value = name;
+      stockOutModal.classList.remove('hidden');
     }
+  }
 
-    if (e.target.matches('.modal-close')) {
-      e.target.closest('.modal').classList.add('hidden');
-    }
-  });
+  if (e.target.matches('.modal-close')) {
+    e.target.closest('.modal').classList.add('hidden');
+    currentProductId = null;
+  }
+});
 
-  // ✅ Submit Stock In
-  window.submitStockIn = function () {
-    const name = document.getElementById('in-name').value;
-    const qty = parseInt(document.getElementById('in-qty').value);
-    if (!qty || qty <= 0) return alert('Enter a valid quantity.');
+// ✅ Submit Stock In
+window.submitStockIn = function () {
+  const qty = parseInt(document.getElementById('in-qty').value);
+  if (!qty || qty <= 0 || !currentProductId) return alert('Enter a valid quantity.');
 
-    fetch('../php/inventory.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, qty, action: 'add' })
-    })
-      .then(res => res.json())
-      .then(() => {
-        stockInModal.classList.add('hidden');
-        fetchInventory();
-      });
-  };
+  fetch('../php/inventory.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ product_id: currentProductId, qty, action: 'add' })
+  })
+    .then(res => res.json())
+    .then(() => {
+      stockInModal.classList.add('hidden');
+      fetchInventory();
+    });
+};
 
-  // ✅ Submit Stock Out
-  window.submitStockOut = function () {
-    const name = document.getElementById('out-name').value;
-    const qty = parseInt(document.getElementById('out-qty').value);
-    if (!qty || qty <= 0) return alert('Enter a valid quantity.');
+// ✅ Submit Stock Out
+window.submitStockOut = function () {
+  const qty = parseInt(document.getElementById('out-qty').value);
+  if (!qty || qty <= 0 || !currentProductId) return alert('Enter a valid quantity.');
 
-    fetch('../php/inventory.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, qty, action: 'remove' })
-    })
-      .then(res => res.json())
-      .then(() => {
-        stockOutModal.classList.add('hidden');
-        fetchInventory();
-      });
-  };
+  fetch('../php/inventory.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ product_id: currentProductId, qty, action: 'remove' })
+  })
+    .then(res => res.json())
+    .then(() => {
+      stockOutModal.classList.add('hidden');
+      fetchInventory();
+    });
+};
 
   // 🚀 Initial load
   fetchInventory();
