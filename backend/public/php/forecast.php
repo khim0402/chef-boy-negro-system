@@ -1,21 +1,23 @@
 <?php
 header('Content-Type: application/json');
-require_once(__DIR__ . '/db.php');
 
-$output = shell_exec("\"C:/xampp/htdocs/Chef Boy Negro/venv/Scripts/python\" " . escapeshellarg(__DIR__ . '/../../python/forecast_sales.py') . " 2>&1");
+// Call the deployed Python service via HTTP
+$apiUrl = "https://chefboynegro-forecast.onrender.com/forecast";
 
-if ($output === null) {
-    echo json_encode(["status" => "error", "message" => "Forecast script failed"]);
+$response = file_get_contents($apiUrl);
+
+if ($response === false) {
+    echo json_encode(["status" => "error", "message" => "Unable to reach forecast service"]);
 } else {
-    $data = json_decode($output, true);
+    $data = json_decode($response, true);
     if (json_last_error() !== JSON_ERROR_NONE) {
         echo json_encode([
             "status" => "error",
-            "message" => "Invalid forecast output",
-            "raw_output" => $output // ✅ show Python’s actual output for debugging
+            "message" => "Invalid forecast response",
+            "raw_output" => $response
         ]);
     } else {
-        echo $output; // ✅ already JSON from Python
+        echo $response; // ✅ Already JSON from Flask
     }
 }
 ?>
