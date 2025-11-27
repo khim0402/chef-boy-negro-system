@@ -125,8 +125,7 @@ async function runForecast() {
     const data = await res.json();
     if (data.status === 'success') {
       alert('✅ Forecast updated!');
-      // 🔄 Re-fetch everything fresh from DB
-      await fetchForecastAll();
+      await fetchForecastAll(); // reload charts from DB
     } else {
       alert('❌ Forecast failed: ' + data.message);
     }

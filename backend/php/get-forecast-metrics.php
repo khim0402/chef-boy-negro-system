@@ -3,8 +3,13 @@ header('Content-Type: application/json; charset=utf-8');
 require_once(__DIR__ . '/db.php');
 
 try {
-    $stmt = $pdo->query("SELECT model_used, mape, rmse, mae, trained_on, forecast_horizon 
-                         FROM forecast_metrics ORDER BY created_at DESC LIMIT 1");
+    $stmtM = $pdo->query("
+    SELECT model_used, mape, rmse, mae, trained_on, forecast_horizon
+    FROM forecast_metrics
+    ORDER BY created_at DESC
+    LIMIT 1
+");
+
     $row = $stmt->fetch();
 
     if ($row) {
