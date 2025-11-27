@@ -24,11 +24,11 @@ if ($action === 'run') {
 try {
     // Latest metrics
     $stmtM = $pdo->query("
-        SELECT model_name AS model_used, mape, rmse, mae, run_at AS trained_on, 7 AS forecast_horizon
-        FROM forecast_metrics
-        ORDER BY run_at DESC
-        LIMIT 1
-    ");
+    SELECT model_used, mape, rmse, mae, trained_on, forecast_horizon
+    FROM forecast_metrics
+    ORDER BY created_at DESC
+    LIMIT 1
+");
     $metricsRow = $stmtM->fetch() ?: [
         "model_used" => "LightGBM",
         "mape" => 0.0, "rmse" => 0.0, "mae" => 0.0,
