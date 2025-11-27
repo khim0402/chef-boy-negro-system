@@ -54,7 +54,11 @@ try {
     }
 
     // Inventory summary
-    $avgRows = $pdo->query("SELECT product_id, AVG(qty) AS avg_qty FROM product_forecast GROUP BY product_id")->fetchAll();
+    $avgRows = $pdo->query("
+    SELECT product_id, AVG(forecast_qty) AS avg_qty
+    FROM product_forecast
+    GROUP BY product_id
+")->fetchAll();
     $avgMap = [];
     foreach ($avgRows as $r) $avgMap[(int)$r['product_id']] = (float)$r['avg_qty'];
 
