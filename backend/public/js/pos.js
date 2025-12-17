@@ -149,6 +149,10 @@ document.addEventListener('DOMContentLoaded', () => {
     { product_id: 92, category: 'Short Order', name: 'Chefboy Bihon Guisado', price: 195 },
   ];
 
+  // 🚫 Deny list (define to avoid ReferenceError and to block retired categories)
+const DENY_CATEGORIES = new Set(['Bilao', 'Bilao/Trays']);
+const DENY_NAME_KEYWORDS = ['Bilao'];
+
 // 🛒 Order state
   const orderItems = [];
   let lineCounter = 1; // stable line IDs
