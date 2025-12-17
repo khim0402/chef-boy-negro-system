@@ -22,11 +22,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 👤 Current cashier from localStorage
   const cashierId = localStorage.getItem('cashier_id');
-  const cashierEmail = localStorage.getItem('cashier_email');
-  const cashierEl = document.getElementById('current-cashier');
-  if (cashierEl) {
-    cashierEl.textContent = cashierEmail ? `Cashier: ${cashierEmail}` : 'Cashier: Unknown';
-  }
+  const cashierName = localStorage.getItem('cashier_username');
+const cashierEl = document.getElementById('current-cashier');
+if (cashierEl) {
+  cashierEl.textContent = cashierName ? `Cashier: ${cashierName}` : 'Cashier: Unknown';
+}
 
   // 🧾 Modal Logic
   const modal = document.getElementById('category-modal');
