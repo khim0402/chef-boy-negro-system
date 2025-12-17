@@ -19,6 +19,9 @@ try {
         throw new Exception("Missing cashier_id.");
     }
 
+    // Optional GCash reference
+    $gcash_ref = trim($input['gcash_ref'] ?? '');
+
     $items = $input['items'];
     $total_amount = 0.0;
 
@@ -31,14 +34,15 @@ try {
 
     // Insert sale and get ID (PostgreSQL RETURNING)
     $stmtSale = $pdo->prepare("
-        INSERT INTO sales (payment_method, total_amount, created_at, cashier_id)
-        VALUES (:payment_method, :total_amount, NOW(), :cashier_id)
+        INSERT INTO sales (payment_method, total_amount, created_at, cashier_id, gcash_ref)
+        VALUES (:payment_method, :total_amount, NOW(), :cashier_id, :gcash_ref)
         RETURNING id
     ");
     $stmtSale->execute([
         ':payment_method' => $payment_method,
         ':total_amount'   => $total_amount,
-        ':cashier_id'     => $cashier_id
+        ':cashier_id'     => $cashier_id,
+        ':gcash_ref'      => $gcash_ref ?: null
     ]);
     $sales_id = (int)$stmtSale->fetchColumn();
 
@@ -54,7 +58,6 @@ try {
     $stmtCheck = $pdo->prepare("SELECT qty, oil_usage FROM inventory WHERE product_id = :product_id");
 
     // Oil deduction (global table)
-    // Ensure you created oil_stock table as per Change #1
     $stmtOilDeduct = $pdo->prepare("
         UPDATE oil_stock SET qty = qty - :oilQty
         WHERE id = (SELECT id FROM oil_stock ORDER BY id DESC LIMIT 1)
@@ -123,19 +126,4 @@ try {
         "message" => $e->getMessage()
     ]);
 }
-
-$gcash_ref = trim($input['gcash_ref'] ?? '');
-
-$stmtSale = $pdo->prepare("
-    INSERT INTO sales (payment_method, total_amount, created_at, cashier_id, gcash_ref)
-    VALUES (:payment_method, :total_amount, NOW(), :cashier_id, :gcash_ref)
-    RETURNING id
-");
-$stmtSale->execute([
-    ':payment_method' => $payment_method,
-    ':total_amount'   => $total_amount,
-    ':cashier_id'     => $cashier_id,
-    ':gcash_ref'      => $gcash_ref ?: null
-]);
-
 ?>
