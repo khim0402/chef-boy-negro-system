@@ -3,52 +3,101 @@ header('Content-Type: application/json; charset=utf-8');
 require_once(__DIR__ . '/db.php');
 
 try {
-    // Daily, weekly, monthly totals based on sales_items.created_at
-    $res = $pdo->query("SELECT SUM(amount) AS total FROM sales_items WHERE DATE(created_at) = CURRENT_DATE");
-    $daily = (float)($res->fetch()['total'] ?? 0);
+    // Optional filters
+    $start   = $_GET['start'] ?? null;
+    $end     = $_GET['end'] ?? null;
+    $cashier = $_GET['cashier'] ?? null; // cashier_id
 
-    $res = $pdo->query("SELECT SUM(amount) AS total FROM sales_items WHERE DATE_TRUNC('week', created_at) = DATE_TRUNC('week', CURRENT_DATE)");
-    $weekly = (float)($res->fetch()['total'] ?? 0);
+    $whereTotals = [];
+    $paramsTotals = [];
 
-    $res = $pdo->query("SELECT SUM(amount) AS total FROM sales_items WHERE DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)");
-    $monthly = (float)($res->fetch()['total'] ?? 0);
+    if (!empty($cashier)) {
+        $whereTotals[] = "cashier_id = :cashier";
+        $paramsTotals[':cashier'] = $cashier;
+    }
+    $whereTotalsSql = count($whereTotals) ? ("WHERE " . implode(" AND ", $whereTotals)) : "";
 
-    // Date filters
-    $start = $_GET['start'] ?? null;
-    $end   = $_GET['end'] ?? null;
+    // Daily, weekly, monthly totals based on sales_items.created_at, filtered by cashier if provided
+    $stmtDaily = $pdo->prepare("
+        SELECT COALESCE(SUM(si.amount), 0) AS total
+        FROM sales_items si
+        JOIN sales s ON si.sales_id = s.id
+        $whereTotalsSql
+        AND DATE(si.created_at) = CURRENT_DATE
+    ");
+    $stmtWeekly = $pdo->prepare("
+        SELECT COALESCE(SUM(si.amount), 0) AS total
+        FROM sales_items si
+        JOIN sales s ON si.sales_id = s.id
+        $whereTotalsSql
+        AND DATE_TRUNC('week', si.created_at) = DATE_TRUNC('week', CURRENT_DATE)
+    ");
+    $stmtMonthly = $pdo->prepare("
+        SELECT COALESCE(SUM(si.amount), 0) AS total
+        FROM sales_items si
+        JOIN sales s ON si.sales_id = s.id
+        $whereTotalsSql
+        AND DATE_TRUNC('month', si.created_at) = DATE_TRUNC('month', CURRENT_DATE)
+    ");
 
-    if ($start && $end) {
-        $stmt = $pdo->prepare("
-            SELECT s.created_at AS date, si.qty, si.amount, s.payment_method, i.name AS product
-            FROM sales_items si
-            JOIN sales s ON si.sales_id = s.id
-            JOIN inventory i ON si.product_id = i.product_id
-            WHERE DATE(si.created_at) BETWEEN :start AND :end
-            ORDER BY si.created_at DESC
-        ");
-        $stmt->execute([':start' => $start, ':end' => $end]);
-        $sales = $stmt->fetchAll();
-    } else {
-        $sales = $pdo->query("
-            SELECT 
-            s.created_at AS date,
-            si.qty,
-            si.amount,
-            COALESCE(s.payment_method, 'N/A') AS payment_method,
-            i.name AS product
-            FROM sales_items si
-            JOIN sales s ON si.sales_id = s.id
-            JOIN inventory i ON si.product_id = i.product_id
-            ORDER BY si.created_at DESC
-            LIMIT 50
-        ")->fetchAll();
+    // Bind params for totals
+    foreach ([$stmtDaily, $stmtWeekly, $stmtMonthly] as $stmt) {
+        foreach ($paramsTotals as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->execute();
     }
 
+    $daily   = (float)($stmtDaily->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+    $weekly  = (float)($stmtWeekly->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+    $monthly = (float)($stmtMonthly->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+
+    // Sales list with optional date range and cashier filter
+    $where = [];
+    $params = [];
+
+    if ($start && $end) {
+        $where[] = "DATE(si.created_at) BETWEEN :start AND :end";
+        $params[':start'] = $start;
+        $params[':end']   = $end;
+    }
+    if (!empty($cashier)) {
+        $where[] = "s.cashier_id = :cashier";
+        $params[':cashier'] = $cashier;
+    }
+
+    $whereSql = count($where) ? ("WHERE " . implode(" AND ", $where)) : "";
+
+    $sql = "
+        SELECT 
+            si.created_at::timestamp(0) AS date,
+            si.qty,
+            si.amount,
+            s.payment_method,
+            i.name AS product,
+            u.email AS cashier
+        FROM sales_items si
+        JOIN sales s ON si.sales_id = s.id
+        JOIN inventory i ON si.product_id = i.product_id
+        LEFT JOIN users u ON s.cashier_id = u.user_id
+        $whereSql
+        ORDER BY si.created_at DESC
+    ";
+
+    // Default limit if no date filter to avoid huge results
+    if (!$start || !$end) {
+        $sql .= " LIMIT 50";
+    }
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $sales = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
     echo json_encode([
-        "status" => "success",
-        "sales" => $sales,
-        "daily" => $daily,
-        "weekly" => $weekly,
+        "status"  => "success",
+        "sales"   => $sales,
+        "daily"   => $daily,
+        "weekly"  => $weekly,
         "monthly" => $monthly
     ]);
 } catch (Exception $e) {

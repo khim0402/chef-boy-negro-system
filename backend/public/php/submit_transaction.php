@@ -13,6 +13,12 @@ try {
         throw new Exception("Missing payment method.");
     }
 
+    // Cashier tracking
+    $cashier_id = (int)($input['cashier_id'] ?? 0);
+    if ($cashier_id <= 0) {
+        throw new Exception("Missing cashier_id.");
+    }
+
     $items = $input['items'];
     $total_amount = 0.0;
 
@@ -23,28 +29,36 @@ try {
 
     $pdo->beginTransaction();
 
-    // Insert sale and get ID
+    // Insert sale and get ID (PostgreSQL RETURNING)
     $stmtSale = $pdo->prepare("
-        INSERT INTO sales (payment_method, total_amount, created_at)
-        VALUES (:payment_method, :total_amount, NOW())
+        INSERT INTO sales (payment_method, total_amount, created_at, cashier_id)
+        VALUES (:payment_method, :total_amount, NOW(), :cashier_id)
         RETURNING id
     ");
     $stmtSale->execute([
         ':payment_method' => $payment_method,
-        ':total_amount'   => $total_amount
+        ':total_amount'   => $total_amount,
+        ':cashier_id'     => $cashier_id
     ]);
     $sales_id = (int)$stmtSale->fetchColumn();
 
     // Prepare item insert and inventory update
     $stmtItem = $pdo->prepare("
-        INSERT INTO sales_items (sales_id, product_id, qty, price, amount)
-        VALUES (:sales_id, :product_id, :qty, :price, :amount)
+        INSERT INTO sales_items (sales_id, product_id, qty, price, amount, created_at)
+        VALUES (:sales_id, :product_id, :qty, :price, :amount, NOW())
     ");
     $stmtInv = $pdo->prepare("
         UPDATE inventory SET qty = qty - :qty
         WHERE product_id = :product_id
     ");
-    $stmtCheck = $pdo->prepare("SELECT qty FROM inventory WHERE product_id = :product_id");
+    $stmtCheck = $pdo->prepare("SELECT qty, oil_usage FROM inventory WHERE product_id = :product_id");
+
+    // Oil deduction (global table)
+    // Ensure you created oil_stock table as per Change #1
+    $stmtOilDeduct = $pdo->prepare("
+        UPDATE oil_stock SET qty = qty - :oilQty
+        WHERE id = (SELECT id FROM oil_stock ORDER BY id DESC LIMIT 1)
+    ");
 
     foreach ($items as $item) {
         if (!empty($item['voided'])) continue;
@@ -58,9 +72,13 @@ try {
             throw new Exception("Invalid product or quantity in items.");
         }
 
-        // Check stock before deducting
+        // Check product stock
         $stmtCheck->execute([':product_id' => $product_id]);
-        $stock = (int)$stmtCheck->fetchColumn();
+        $row = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            throw new Exception("Product not found: ID $product_id");
+        }
+        $stock = (int)$row['qty'];
         if ($stock < $qty) {
             throw new Exception("Insufficient stock for product ID $product_id");
         }
@@ -74,11 +92,17 @@ try {
             ':amount'     => $amount
         ]);
 
-        // Update inventory
+        // Deduct product stock
         $stmtInv->execute([
             ':qty'        => $qty,
             ':product_id' => $product_id
         ]);
+
+        // Deduct oil stock
+        $oilUsage = (int)($row['oil_usage'] ?? 0);
+        if ($oilUsage > 0) {
+            $stmtOilDeduct->execute([':oilQty' => $oilUsage * $qty]);
+        }
     }
 
     $pdo->commit();
@@ -99,4 +123,19 @@ try {
         "message" => $e->getMessage()
     ]);
 }
+
+$gcash_ref = trim($input['gcash_ref'] ?? '');
+
+$stmtSale = $pdo->prepare("
+    INSERT INTO sales (payment_method, total_amount, created_at, cashier_id, gcash_ref)
+    VALUES (:payment_method, :total_amount, NOW(), :cashier_id, :gcash_ref)
+    RETURNING id
+");
+$stmtSale->execute([
+    ':payment_method' => $payment_method,
+    ':total_amount'   => $total_amount,
+    ':cashier_id'     => $cashier_id,
+    ':gcash_ref'      => $gcash_ref ?: null
+]);
+
 ?>

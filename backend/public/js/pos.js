@@ -20,6 +20,14 @@ document.addEventListener('DOMContentLoaded', () => {
   setInterval(updateDateTime, 1000);
   updateDateTime();
 
+  // 👤 Current cashier from localStorage
+  const cashierId = localStorage.getItem('cashier_id');
+  const cashierEmail = localStorage.getItem('cashier_email');
+  const cashierEl = document.getElementById('current-cashier');
+  if (cashierEl) {
+    cashierEl.textContent = cashierEmail ? `Cashier: ${cashierEmail}` : 'Cashier: Unknown';
+  }
+
   // 🧾 Modal Logic
   const modal = document.getElementById('category-modal');
   const modalTitle = document.getElementById('modal-title');
@@ -139,55 +147,26 @@ document.addEventListener('DOMContentLoaded', () => {
     { product_id: 90, category: 'Short Order', name: 'Chefboy Mikibihon', price: 199 },
     { product_id: 91, category: 'Short Order', name: 'Chefboy Lomi', price: 199 },
     { product_id: 92, category: 'Short Order', name: 'Chefboy Bihon Guisado', price: 195 },
-
-    { product_id: 93, category: 'Bilao', name: 'Pancit Canton (10PAX)', price: 550 },
-    { product_id: 94, category: 'Bilao', name: 'Pancit Canton (15PAX)', price: 650 },
-    { product_id: 95, category: 'Bilao', name: 'Miki Bihon (10PAX)', price: 500 },
-    { product_id: 96, category: 'Bilao', name: 'Miki Bihon (15PAX)', price: 600 },
-    { product_id: 97, category: 'Bilao', name: 'Bihon Guisado (10PAX)', price: 495 },
-    { product_id: 98, category: 'Bilao', name: 'Bihon Guisado (15PAX)', price: 595 }
   ];
 
-  // 🛒 Order Logic
+// 🛒 Order state
   const orderItems = [];
+  let lineCounter = 1; // stable line IDs
 
-  function addToOrder(name, price, product_id = null) {
-    // 🛑 Check stock before adding
-    fetch('../php/check_stock.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderItems: [{ name, product_id, qty: 1 }] })
-    })
-    .then(res => {
-      if (!res.ok) throw new Error("Network error: " + res.status);
-      return res.json();
-    })
-    .then(stockResponse => {
-      console.log("Stock check response:", stockResponse);
+  function createLineItem({ name, price, product_id, qty = 1 }) {
+    return {
+      id: lineCounter++,
+      name,
+      product_id,
+      price: parseFloat(price),
+      qty: parseInt(qty, 10),
+      amount: parseFloat(price) * parseInt(qty, 10),
+      voided: false
+    };
+  }
 
-      if (stockResponse.status === 'out_of_stock') {
-        alert(`Item "${name}" is out of stock.`);
-        return;
-      }
-      if (stockResponse.status === 'error') {
-        alert(`Stock check error: ${stockResponse.message || 'Unknown'}`);
-        return;
-      }
-
-      // ✅ Add item if stock is available
-      const existing = orderItems.find(item => item.name === name);
-      if (existing) {
-        existing.qty += 1;
-        existing.amount = existing.qty * existing.price;
-      } else {
-        orderItems.push({ name, price, qty: 1, amount: price, product_id, voided: false });
-      }
-      renderOrder();
-    })
-    .catch(err => {
-      console.error("Stock check failed:", err);
-      alert("Error checking stock for " + name);
-    });
+  function recalc(item) {
+    item.amount = item.price * item.qty;
   }
 
   function renderOrder() {
@@ -195,45 +174,107 @@ document.addEventListener('DOMContentLoaded', () => {
     tbody.innerHTML = '';
     let total = 0;
 
-    orderItems.forEach((item, index) => {
+    orderItems.forEach((item) => {
       const row = document.createElement('tr');
+      row.dataset.id = item.id;
+
+      const nameCell = item.voided ? `<s>${item.name}</s>` : item.name;
+
       row.innerHTML = `
-        <td>${item.voided ? `<s>${item.name}</s>` : item.name}</td>
-        <td>${item.qty}</td>
+        <td>${nameCell}</td>
+        <td>
+          <input type="number" min="1" class="qty-input" data-id="${item.id}" value="${item.qty}" ${item.voided ? 'disabled' : ''} />
+        </td>
         <td>₱${item.price.toFixed(2)}</td>
         <td>₱${item.amount.toFixed(2)}</td>
         <td>
-          <button class="void-btn" data-index="${index}">Void</button>
+          <button class="void-toggle-btn" data-id="${item.id}">
+            ${item.voided ? 'Unvoid' : 'Void'}
+          </button>
         </td>
       `;
       tbody.appendChild(row);
 
-      if (!item.voided) {
-        total += item.amount;
-      }
+      if (!item.voided) total += item.amount;
     });
 
     document.getElementById('total-amount').textContent = `₱${total.toFixed(2)}`;
     updateChange();
   }
 
-  // 🆕 Void via event delegation
-  document.getElementById('order-items').addEventListener('click', (e) => {
-    if (e.target.classList.contains('void-btn')) {
-      const index = parseInt(e.target.dataset.index, 10);
-      const password = prompt("Enter manager password to void:");
-      if (password === "123456") {
-        orderItems[index].voided = true;
-        renderOrder();
-      } else {
-        alert("Incorrect password. Void not allowed.");
+  function updateChange() {
+    const total = orderItems.reduce((sum, item) => sum + (item.voided ? 0 : item.amount), 0);
+    const received = parseFloat(amountReceived) || 0;
+    const change = received - total;
+    document.getElementById('total-change').textContent = `₱${change >= 0 ? change.toFixed(2) : '0.00'}`;
+  }
+
+  // 🧾 Manager auth (for void toggle)
+  function promptManager() {
+    const password = prompt("Enter manager password:");
+    return password === "123456"; // replace with your secure validation
+  }
+
+  // 🧾 Toggle void/unvoid
+  document.getElementById('order-items')?.addEventListener('click', (e) => {
+    if (e.target.classList.contains('void-toggle-btn')) {
+      const id = parseInt(e.target.dataset.id, 10);
+      const item = orderItems.find(i => i.id === id);
+      if (!item) return;
+
+      if (!promptManager()) {
+        alert("Incorrect password. Action not allowed.");
+        return;
       }
+
+      item.voided = !item.voided;
+      renderOrder();
     }
   });
 
-  // 📂 Show items by category (renders LI with dataset attributes)
+  // ✏️ Quantity input change per line
+  document.getElementById('order-items')?.addEventListener('input', (e) => {
+    if (e.target.classList.contains('qty-input')) {
+      const id = parseInt(e.target.dataset.id, 10);
+      const item = orderItems.find(i => i.id === id);
+      if (!item || item.voided) return;
+
+      let qty = parseInt(e.target.value, 10);
+      if (!Number.isFinite(qty) || qty < 1) qty = 1;
+
+      // Check stock for new qty
+      checkStock([{ name: item.name, product_id: item.product_id, qty }])
+        .then(ok => {
+          if (!ok) {
+            e.target.value = item.qty; // revert
+            return;
+          }
+          item.qty = qty;
+          recalc(item);
+          renderOrder();
+        })
+        .catch(() => {
+          e.target.value = item.qty; // revert
+        });
+    }
+  });
+
+  // 📂 Category modal rendering
   function showCategory(categoryName) {
-    const filtered = items.filter(item => item.category === categoryName);
+    if (DENY_CATEGORIES.has(categoryName)) {
+      alert('This category is no longer available.');
+      return;
+    }
+
+    const modal = document.getElementById('category-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalItems = document.getElementById('modal-items');
+
+    const filtered = items
+      .filter(item => item.category === categoryName)
+      .filter(item => !DENY_CATEGORIES.has(item.category))
+      .filter(item => !DENY_NAME_KEYWORDS.some(k => item.name.includes(k)));
+
     modalItems.innerHTML = '';
     modalTitle.textContent = categoryName;
 
@@ -246,11 +287,70 @@ document.addEventListener('DOMContentLoaded', () => {
       modalItems.appendChild(li);
     });
 
+    if (filtered.length === 0) {
+      const li = document.createElement('li');
+      li.textContent = 'No items available.';
+      modalItems.appendChild(li);
+    }
+
     modal.classList.remove('hidden');
   }
 
-  // ✅ Event delegation inside modal: capture clicks on LI
-  modalItems.addEventListener('click', (e) => {
+  // ✅ Quantity modal state
+  let pendingItem = null; // { name, price, product_id }
+  const qtyModal = document.getElementById('qty-modal');
+  const qtyInput = document.getElementById('qty-input');
+
+  function openQtyModal(item) {
+    pendingItem = item;
+    if (qtyModal && qtyInput) {
+      qtyInput.value = '1';
+      qtyModal.classList.remove('hidden');
+      qtyInput.focus();
+      qtyInput.select();
+    } else {
+      // Fallback: prompt
+      const input = prompt(`Enter quantity for ${item.name}:`, '1');
+      const qty = parseInt(input, 10);
+      if (Number.isFinite(qty) && qty > 0) {
+        addWithStock(item, qty);
+      } else {
+        alert('Invalid quantity.');
+      }
+    }
+  }
+
+  function closeQtyModal() {
+    if (qtyModal) {
+      qtyModal.classList.add('hidden');
+    }
+    pendingItem = null;
+  }
+
+  document.getElementById('qty-confirm')?.addEventListener('click', () => {
+    if (!pendingItem) return;
+    const qty = parseInt(qtyInput.value, 10);
+    if (!Number.isFinite(qty) || qty < 1) {
+      alert('Please enter a valid quantity (1 or more).');
+      return;
+    }
+    addWithStock(pendingItem, qty);
+    closeQtyModal();
+  });
+
+  document.getElementById('qty-cancel')?.addEventListener('click', closeQtyModal);
+  document.getElementById('qty-close')?.addEventListener('click', closeQtyModal);
+
+  // Enter key to confirm in qty input
+  qtyInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('qty-confirm')?.click();
+    }
+  });
+
+  // 🧾 Event delegation: click menu item -> open quantity modal
+  document.getElementById('modal-items')?.addEventListener('click', (e) => {
     const li = e.target.closest('li');
     if (!li) return;
 
@@ -258,22 +358,80 @@ document.addEventListener('DOMContentLoaded', () => {
     const price = parseFloat(li.dataset.price);
     const product_id = parseInt(li.dataset.productId, 10);
 
-    console.log('Menu click:', { name, price, product_id });
-    addToOrder(name, price, product_id);
+    if (DENY_NAME_KEYWORDS.some(k => name.includes(k))) {
+      alert('This item is no longer available.');
+      return;
+    }
+
+    openQtyModal({ name, price, product_id });
   });
 
-  // ✅ Wire up category buttons
-  document.querySelectorAll('.category-grid button').forEach(btn => {
+  // 🧾 Add item with stock check for requested qty
+  function addWithStock(item, qty) {
+  checkStock([{ name: item.name, product_id: item.product_id, qty }])
+    .then(ok => {
+      if (!ok) return;
+
+      // Find existing non-voided line
+      const existing = orderItems.find(i => i.name === item.name && !i.voided);
+
+      if (existing) {
+        existing.qty += qty;
+        recalc(existing);
+      } else {
+        // Always create a new line if no active one exists
+        const line = createLineItem({ name: item.name, price: item.price, product_id: item.product_id, qty });
+        orderItems.push(line);
+      }
+
+      renderOrder();
+    })
+    .catch(err => {
+      console.error("Stock check failed:", err);
+      alert("Error checking stock for " + item.name);
+    });
+}
+
+  // 🔍 Stock check helper
+  function checkStock(orderItemsPayload) {
+    return fetch('../php/check_stock.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderItems: orderItemsPayload })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'out_of_stock') {
+          showStockWindow(data.items);
+          return false;
+        }
+        if (data.status === 'error') {
+          alert(`Stock check error: ${data.message || 'Unknown'}`);
+          return false;
+        }
+        return true;
+      });
+  }
+
+  // 🧭 Category buttons
+  document.querySelectorAll('.category-grid button')?.forEach(btn => {
     btn.addEventListener('click', () => {
       const category = btn.textContent.trim();
-      console.log('Category clicked:', category);
       showCategory(category);
     });
   });
 
+  // 🧰 Modal close (category modal)
+  document.querySelector('.modal-close')?.addEventListener('click', () => {
+    const modal = document.getElementById('category-modal');
+    const modalItems = document.getElementById('modal-items');
+    modal.classList.add('hidden');
+    modalItems.innerHTML = '';
+  });
+
   // 💰 Keypad logic
   let amountReceived = '';
-  document.querySelectorAll('.keypad button').forEach(btn => {
+  document.querySelectorAll('.keypad button')?.forEach(btn => {
     btn.addEventListener('click', () => {
       const val = btn.textContent;
       amountReceived = val === 'C' ? '' : amountReceived + val;
@@ -286,155 +444,155 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  function updateChange() {
-    const total = orderItems.reduce((sum, item) => sum + (item.voided ? 0 : item.amount), 0);
-    const received = parseFloat(amountReceived) || 0;
-    const change = received - total;
-    document.getElementById('total-change').textContent = `₱${change >= 0 ? change.toFixed(2) : '0.00'}`;
-  }
-
   // 💳 Payment method toggle
-  document.querySelectorAll('.btn-method').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.btn-method').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    });
+document.querySelectorAll('.btn-method')?.forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.btn-method').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    // Show GCash reference input if GCash selected
+    const gcashSection = document.getElementById('gcash-section');
+    if (btn.textContent.trim().toLowerCase() === 'gcash') {
+      gcashSection.classList.remove('hidden');
+    } else {
+      gcashSection.classList.add('hidden');
+    }
   });
+});
 
   // ✅ Proceed transaction
-  const proceedButton = document.querySelector('.btn-proceed');
-  if (proceedButton) {
-    proceedButton.addEventListener('click', () => {
-      const total = orderItems.reduce((sum, item) => sum + (item.voided ? 0 : item.amount), 0);
-      const received = parseFloat(document.getElementById('amount-received-value')?.value) || 0;
-      const activeMethodBtn = document.querySelector('.btn-method.active');
+const proceedButton = document.querySelector('.btn-proceed');
+if (proceedButton) {
+  proceedButton.addEventListener('click', () => {
+    const total = orderItems.reduce((sum, item) => sum + (item.voided ? 0 : item.amount), 0);
+    const received = parseFloat(document.getElementById('amount-received-value')?.value) || 0;
+    const activeMethodBtn = document.querySelector('.btn-method.active');
 
-      if (!activeMethodBtn) return alert('Please select a payment method.');
-      if (!orderItems.some(i => !i.voided)) return alert('No items in order.');
-      if (received < total) return alert('Insufficient payment.');
+    if (!activeMethodBtn) return alert('Please select a payment method.');
+    if (!orderItems.some(i => !i.voided)) return alert('No active items in order.');
+    if (received < total) return alert('Insufficient payment.');
+    if (!cashierId) return alert('No cashier identified. Please log in again.');
 
-      const method = activeMethodBtn.textContent;
+    const method = activeMethodBtn.textContent.trim();
 
-      // 🛑 Check stock again before finalizing
-      fetch('../php/check_stock.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderItems })
-      })
-      .then(res => {
-        if (!res.ok) throw new Error('Network error: ' + res.status);
-        return res.json();
-      })
-      .then(stockResponse => {
-        if (stockResponse.status === 'out_of_stock') {
-          showStockWindow(stockResponse.items);
-          return null;
-        }
-        if (stockResponse.status === 'error') {
-          alert(`Stock check error: ${stockResponse.message || 'Unknown'}`);
-          return null;
-        }
+    // 🔑 Require GCash reference number
+    let gcashRef = null;
+    if (method.toLowerCase() === 'gcash') {
+      gcashRef = document.getElementById('gcash-ref').value.trim();
+      if (!gcashRef) {
+        alert('Please enter GCash Reference # before proceeding.');
+        return;
+      }
+    }
 
-        // ✅ Submit transaction (public/php endpoint)
-        return fetch('../php/submit_transaction.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items: orderItems, payment_method: method })
-        });
-      })
-      .then(async res => {
-        if (!res) return; // stock error already handled
-        const text = await res.text();
+      // Final stock check for all active lines
+      const toCheck = orderItems
+        .filter(i => !i.voided)
+        .map(i => ({ name: i.name, product_id: i.product_id, qty: i.qty }));
 
-        try {
-          const data = JSON.parse(text);
-          console.log("Transaction response:", data);
+      checkStock(toCheck)
+        .then(ok => {
+          if (!ok) return null;
+
+          // Submit only non-voided lines
+          const payloadItems = orderItems
+            .filter(i => !i.voided)
+            .map(i => ({
+              name: i.name,
+              product_id: i.product_id,
+              qty: i.qty,
+              price: i.price,
+              amount: i.amount,
+              voided: false
+            }));
+
+          return fetch('../php/submit_transaction.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              items: payloadItems,
+              payment_method: method,
+              cashier_id: cashierId,
+              gcash_ref: gcashRef
+            })
+          });
+        })
+        .then(async res => {
+          if (!res) return; // stock error handled
+          const text = await res.text();
+          let data;
+          try { data = JSON.parse(text); } catch {
+            console.error("Invalid JSON from submit_transaction.php:", text);
+            alert("Something went wrong: Invalid response from server.");
+            return;
+          }
 
           if (data.status === 'success') {
             alert('Transaction complete! ID: ' + (data.transaction_id || 'N/A'));
+
+            // Reset order
             orderItems.length = 0;
+            lineCounter = 1;
             amountReceived = '';
             renderOrder();
             document.getElementById('amount-received-value').value = '';
             document.getElementById('amount-received').textContent = '₱0.00';
             document.getElementById('total-change').textContent = '₱0.00';
-
-            // 🔄 Sync sales (optional UI hooks)
-            fetch('../php/get-sales.php')
-              .then(r => r.ok ? r.json() : Promise.reject(new Error('Sales fetch error')))
-              .then(salesData => {
-                if (!salesData || typeof salesData.daily === 'undefined') {
-                  throw new Error("Invalid sales data");
-                }
-                window.updateSalesUI(salesData);
-              })
-              .catch(err => console.error("Sales sync error:", err.message));
-
-            // 🔄 Sync inventory (optional UI hooks)
-            fetch('../php/inventory.php')
-              .then(r => r.ok ? r.json() : Promise.reject(new Error('Inventory fetch error')))
-              .then(inventoryData => {
-                const items = Array.isArray(inventoryData) ? inventoryData : inventoryData.items;
-                if (!Array.isArray(items)) throw new Error("Invalid inventory data");
-                window.updateInventoryUI({ items });
-              });
-
           } else {
             alert('Transaction failed: ' + (data.message || 'Unknown error'));
           }
-        } catch (err) {
-          console.error("Invalid JSON from submit_transaction.php:", text);
-          alert("Something went wrong: Invalid response from server.");
-        }
-      })
-      .catch(err => {
-        console.error("Proceed button error:", err);
-        alert("Something went wrong: " + err.message);
-      });
+        })
+        .catch(err => {
+          console.error("Proceed button error:", err);
+          alert("Something went wrong: " + err.message);
+        });
     });
   }
 
-  // ✅ Logout
+  // 🔚 Logout
   document.querySelector('.logout-btn')?.addEventListener('click', () => {
     if (confirm('Are you sure you want to logout?')) {
       window.location.href = '../html/login.html';
     }
   });
 
-  // 🧩 Stock window
-  function showStockWindow(items) {
-    const stockWindow = document.getElementById('stock-window');
-    const message = document.getElementById('stock-window-message');
-    message.textContent = `Out of stock: ${items.join(', ')}`;
-    stockWindow.classList.remove('hidden');
-    stockWindow.style.display = 'block';
-  }
+function checkStock(orderItemsPayload) {
+  return fetch('../php/check_stock.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orderItems: orderItemsPayload })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === 'stock_issue') {
+        if (data.out_of_stock?.length) {
+          showStockWindow(data.out_of_stock, "Out of stock");
+        }
+        if (data.insufficient?.length) {
+          showStockWindow(data.insufficient, "Insufficient quantity of order");
+        }
+        return false;
+      }
+      if (data.status === 'error') {
+        alert(`Stock check error: ${data.message || 'Unknown'}`);
+        return false;
+      }
+      return true;
+    });
+}
+
+// Adjust showStockWindow to accept type
+function showStockWindow(items, type = "Out of stock") {
+  const stockWindow = document.getElementById('stock-window');
+  const message = document.getElementById('stock-window-message');
+  message.textContent = `${type}: ${items.join(', ')}`;
+  stockWindow.classList.remove('hidden');
+  stockWindow.style.display = 'block';
+}
+
   window.closeStockWindow = function () {
     const stockWindow = document.getElementById('stock-window');
     stockWindow.classList.add('hidden');
     stockWindow.style.display = 'none';
-  };
-
-  // 🔄 UI hooks (optional integration with dashboard)
-  window.updateSalesUI = function (data) {
-    const d = document.getElementById('daily-sales');
-    const w = document.getElementById('weekly-sales');
-    const m = document.getElementById('monthly-sales');
-    if (d) d.textContent = `₱${parseFloat(data.daily).toFixed(2)}`;
-    if (w) w.textContent = `₱${parseFloat(data.weekly).toFixed(2)}`;
-    if (m) m.textContent = `₱${parseFloat(data.monthly).toFixed(2)}`;
-  };
-
-  window.updateInventoryUI = function (data) {
-    const inventoryTable = document.getElementById('inventory-table');
-    const items = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : []);
-    if (inventoryTable) {
-      inventoryTable.innerHTML = '';
-      items.forEach(item => {
-        const row = document.createElement('tr');
-        row.innerHTML = `<td>${item.name}</td><td>${item.qty}</td>`;
-        inventoryTable.appendChild(row);
-      });
-    }
   };
 });

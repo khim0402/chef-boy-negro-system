@@ -58,6 +58,11 @@
         <button class="btn-method">Cash</button>
         <button class="btn-method">GCash</button>
       </div>
+      <div id="gcash-section" class="hidden">
+  <label for="gcash-ref">GCash Reference #</label>
+  <input type="text" id="gcash-ref" placeholder="Enter GCash Ref #" />
+</div>
+
 
       <button class="btn-proceed">Proceed</button>
     </section>
@@ -68,7 +73,7 @@
     <button>Bilao/Trays</button><button>Beef</button><button>Chicken</button>
     <button>Vegetable</button><button>Dessert</button><button>Rice</button>
     <button>Sizzling/Platters</button><button>Sizzling w/ Rice</button><button>Silog</button>
-    <button>Short Order</button><button>Bilao</button>
+    <button>Short Order</button>
   </section>
 
   <div id="category-modal" class="modal hidden">
@@ -78,6 +83,22 @@
       <ul id="modal-items"></ul>
     </div>
   </div>
+
+  <!-- Quantity modal -->
+<div id="qty-modal" class="modal hidden">
+  <div class="modal-content">
+    <span class="modal-close" id="qty-close">&times;</span>
+    <h2>Enter quantity</h2>
+    <div class="form-row">
+      <label for="qty-input">Quantity</label>
+      <input id="qty-input" type="number" min="1" step="1" value="1" />
+    </div>
+    <div class="actions">
+      <button id="qty-cancel">Cancel</button>
+      <button id="qty-confirm">Add</button>
+    </div>
+  </div>
+</div>
 
   <div id="stock-window" class="stock-window hidden">
     <div class="stock-window-content">
