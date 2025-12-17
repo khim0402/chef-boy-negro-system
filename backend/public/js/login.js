@@ -26,22 +26,29 @@ document.getElementById('loginForm').addEventListener('submit', function (e) {
   })
     .then(res => res.json())
     .then(response => {
-      if (response.status === 'success') {
-        window.location.href = response.redirect;
-      } else {
-        if (errorMsg) {
-          errorMsg.textContent = response.message || 'Invalid credentials.';
-          errorMsg.classList.remove('hide');
+  if (response.status === 'success' && response.user) {
+    // ✅ Store cashier info in localStorage
+    localStorage.setItem('cashier_id', response.user.user_id);
+    localStorage.setItem('cashier_email', response.user.email);
+    localStorage.setItem('cashier_username', response.user.username); // 👈 NEW
 
-          setTimeout(() => {
-            errorMsg.classList.add('hide');
-            setTimeout(() => {
-              errorMsg.textContent = '';
-            }, 500);
-          }, 5000);
-        }
-      }
-    })
+    // Redirect to POS
+    window.location.href = response.redirect;
+  } else {
+    if (errorMsg) {
+      errorMsg.textContent = response.message || 'Invalid credentials.';
+      errorMsg.classList.remove('hide');
+
+      setTimeout(() => {
+        errorMsg.classList.add('hide');
+        setTimeout(() => {
+          errorMsg.textContent = '';
+        }, 500);
+      }, 5000);
+    }
+  }
+})
+
     .catch(error => {
       if (errorMsg) {
         errorMsg.textContent = 'Server error. Please try again.';
