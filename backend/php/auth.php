@@ -11,7 +11,7 @@ try {
     $email = trim($input['email']);
     $password = trim($input['password']);
 
-    // Fetch user record including username
+    // Fetch user record including username and role
     $stmt = $pdo->prepare("
         SELECT user_id, email, username, role, password
         FROM users
@@ -31,15 +31,20 @@ try {
         throw new Exception("Invalid credentials.");
     }
 
+    // Determine redirect based on role
+    $redirect = ($user['role'] === 'Cashier')
+        ? '../html/pos.html'
+        : '../html/dashboard.html';
+
     // Success: return user info
     echo json_encode([
         "status" => "success",
-        "redirect" => "../html/pos.html",
+        "redirect" => $redirect,
         "user" => [
-            "user_id" => $user['user_id'],
-            "email"   => $user['email'],
-            "username"=> $user['username'], // 👈 critical for POS header
-            "role"    => $user['role']
+            "user_id"   => $user['user_id'],
+            "email"     => $user['email'],
+            "username"  => $user['username'],
+            "role"      => $user['role']
         ]
     ]);
 } catch (Exception $e) {
