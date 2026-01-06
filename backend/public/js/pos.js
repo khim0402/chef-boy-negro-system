@@ -474,84 +474,79 @@ if (proceedButton) {
 
     if (!activeMethodBtn) return alert('Please select a payment method.');
     if (!orderItems.some(i => !i.voided)) return alert('No active items in order.');
-    if (received < total) return alert('Insufficient payment.');
     if (!cashierId) return alert('No cashier identified. Please log in again.');
 
     const method = activeMethodBtn.textContent.trim();
 
-    // 🔑 Require GCash reference number
-    let gcashRef = null;
-    if (method.toLowerCase() === 'gcash') {
-      gcashRef = document.getElementById('gcash-ref').value.trim();
-      if (!gcashRef) {
-        alert('Please enter GCash Reference # before proceeding.');
-        return;
-      }
+    // ✅ Allow GCash without requiring reference number
+    // ✅ Allow GCash to proceed even if received < total (like Cash)
+    if (method.toLowerCase() === 'cash') {
+      if (received < total) return alert('Insufficient payment.');
     }
 
-      // Final stock check for all active lines
-      const toCheck = orderItems
-        .filter(i => !i.voided)
-        .map(i => ({ name: i.name, product_id: i.product_id, qty: i.qty }));
+    // Final stock check for all active lines
+    const toCheck = orderItems
+      .filter(i => !i.voided)
+      .map(i => ({ name: i.name, product_id: i.product_id, qty: i.qty }));
 
-      checkStock(toCheck)
-        .then(ok => {
-          if (!ok) return null;
+    checkStock(toCheck)
+      .then(ok => {
+        if (!ok) return null;
 
-          // Submit only non-voided lines
-          const payloadItems = orderItems
-            .filter(i => !i.voided)
-            .map(i => ({
-              name: i.name,
-              product_id: i.product_id,
-              qty: i.qty,
-              price: i.price,
-              amount: i.amount,
-              voided: false
-            }));
+        // Submit only non-voided lines
+        const payloadItems = orderItems
+          .filter(i => !i.voided)
+          .map(i => ({
+            name: i.name,
+            product_id: i.product_id,
+            qty: i.qty,
+            price: i.price,
+            amount: i.amount,
+            voided: false
+          }));
 
-          return fetch('../php/submit_transaction.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              items: payloadItems,
-              payment_method: method,
-              cashier_id: cashierId,
-              gcash_ref: gcashRef
-            })
-          });
-        })
-        .then(async res => {
-          if (!res) return; // stock error handled
-          const text = await res.text();
-          let data;
-          try { data = JSON.parse(text); } catch {
-            console.error("Invalid JSON from submit_transaction.php:", text);
-            alert("Something went wrong: Invalid response from server.");
-            return;
-          }
-
-          if (data.status === 'success') {
-            alert('Transaction complete! ID: ' + (data.transaction_id || 'N/A'));
-
-            // Reset order
-            orderItems.length = 0;
-            lineCounter = 1;
-            amountReceived = '';
-            renderOrder();
-            document.getElementById('amount-received-value').value = '';
-            document.getElementById('amount-received').textContent = '₱0.00';
-            document.getElementById('total-change').textContent = '₱0.00';
-          } else {
-            alert('Transaction failed: ' + (data.message || 'Unknown error'));
-          }
-        })
-        .catch(err => {
-          console.error("Proceed button error:", err);
-          alert("Something went wrong: " + err.message);
+        return fetch('../php/submit_transaction.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: payloadItems,
+            payment_method: method,
+            cashier_id: cashierId
+            // 👈 gcash_ref removed entirely
+          })
         });
-    });
-  }
+      })
+      .then(async res => {
+        if (!res) return; // stock error handled
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch {
+          console.error("Invalid JSON from submit_transaction.php:", text);
+          alert("Something went wrong: Invalid response from server.");
+          return;
+        }
+
+        if (data.status === 'success') {
+          alert('Transaction complete! ID: ' + (data.transaction_id || 'N/A'));
+
+          // Reset order
+          orderItems.length = 0;
+          lineCounter = 1;
+          amountReceived = '';
+          renderOrder();
+          document.getElementById('amount-received-value').value = '';
+          document.getElementById('amount-received').textContent = '₱0.00';
+          document.getElementById('total-change').textContent = '₱0.00';
+        } else {
+          alert('Transaction failed: ' + (data.message || 'Unknown error'));
+        }
+      })
+      .catch(err => {
+        console.error("Proceed button error:", err);
+        alert("Something went wrong: " + err.message);
+      });
+  });
+}
 
   // 🔚 Logout
   document.querySelector('.logout-btn')?.addEventListener('click', () => {

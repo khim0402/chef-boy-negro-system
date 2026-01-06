@@ -1,100 +1,94 @@
 window.addEventListener('DOMContentLoaded', () => {
-  console.log("Dashboard JS loaded"); // Debug marker
-
   // ⏰ Real-time clock
   function updateDateTime() {
     const now = new Date();
     const options = {
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true,
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+      hour: 'numeric', minute: 'numeric', hour12: true,
+      year: 'numeric', month: 'short', day: 'numeric'
     };
     document.getElementById('datetime').textContent = now.toLocaleString('en-PH', options);
   }
   setInterval(updateDateTime, 1000);
   updateDateTime();
 
-  // 🔒 Logout button
-  const logoutBtn = document.querySelector(".logout-btn");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      console.log("Logout button clicked"); // Debug marker
-      if (confirm("Are you sure you want to logout?")) {
-        // Adjust path depending on where your login.html is located
-        window.location.href = "login.html"; 
-      }
-    });
-  } else {
-    console.error("Logout button not found!");
-  }
+  // 🔒 Logout
+  document.querySelector(".logout-btn")?.addEventListener("click", () => {
+    if (confirm("Are you sure you want to logout?")) {
+      window.location.href = "login.html"; 
+    }
+  });
 
   let inventory = [];
 
-  // 📦 Render restock alerts
+  // 📦 Restock alerts
   function renderRestockAlerts() {
     const container = document.getElementById('alert-bubbles');
-    if (!container) return;
     container.innerHTML = '';
-
     inventory.forEach(item => {
-      const qty = parseInt(item.qty ?? 0);
-      const threshold = parseInt(item.threshold ?? 0);
-      if (qty < threshold) {
+      if (parseInt(item.qty) < parseInt(item.threshold)) {
         const bubble = document.createElement('div');
         bubble.classList.add('alert-bubble');
-        bubble.innerHTML = `
-          <strong>Low Stock:</strong> ${item.name}<br>
-          <em>Qty:</em> ${qty} / <em>Threshold:</em> ${threshold}
-        `;
+        bubble.innerHTML = `<strong>Low Stock:</strong> ${item.name}<br>
+                            <em>Qty:</em> ${item.qty} / <em>Threshold:</em> ${item.threshold}`;
         container.appendChild(bubble);
       }
     });
   }
 
-  // 🔄 Fetch inventory
-  function fetchInventoryForDashboard() {
-  fetch('../php/inventory.php')
-    .then(res => res.json())
-    .then(data => {
-      console.log("Inventory data:", data); // Debug
-      if (data.status === 'success') {
-        inventory = Array.isArray(data.inventory) ? data.inventory : [];
-        renderRestockAlerts();
-      } else {
-        console.error("Inventory fetch error:", data.message);
-      }
-    })
-    .catch(err => {
-      console.error('Failed to fetch inventory for dashboard:', err);
-    });
-}
-
-  // 📊 Fetch sales overview
-  function fetchSalesOverview() {
-    fetch('../php/get-sales.php')
+  function fetchInventory() {
+    fetch('../php/inventory.php')
       .then(res => res.json())
       .then(data => {
-        console.log("Sales data:", data); // Debug
-        if (data.status !== 'success') return;
-        document.getElementById('daily-sales').textContent = `₱${parseFloat(data.daily).toFixed(2)}`;
-        document.getElementById('weekly-sales').textContent = `₱${parseFloat(data.weekly).toFixed(2)}`;
-        document.getElementById('monthly-sales').textContent = `₱${parseFloat(data.monthly).toFixed(2)}`;
-      })
-      .catch(err => {
-        console.error('Failed to fetch sales overview:', err);
+        if (data.status === 'success') {
+          inventory = data.inventory || [];
+          renderRestockAlerts();
+        }
       });
   }
 
-  // 🚀 Initial load
-  fetchSalesOverview();
-  fetchInventoryForDashboard();
+  // 📊 Sales overview
+  async function fetchSalesOverview(cashierId = '') {
+    const res = await fetch(`../php/get-sales.php${cashierId ? '?cashier='+cashierId : ''}`);
+    const data = await res.json();
+    if (data.status !== 'success') return;
 
-  // 🔁 Auto-refresh every 30 seconds
+    function findTotal(arr) {
+      if (!cashierId) return arr.reduce((sum, r) => sum + parseFloat(r.total), 0);
+      const row = arr.find(r => r.cashier_id == cashierId);
+      return row ? parseFloat(row.total) : 0;
+    }
+
+    document.getElementById('daily-sales').textContent   = `₱${findTotal(data.daily).toFixed(2)}`;
+    document.getElementById('weekly-sales').textContent  = `₱${findTotal(data.weekly).toFixed(2)}`;
+    document.getElementById('monthly-sales').textContent = `₱${findTotal(data.monthly).toFixed(2)}`;
+  }
+
+  // Populate cashier dropdown
+  async function loadCashiers() {
+    const select = document.getElementById('cashier-filter');
+    select.innerHTML = '<option value="">All Cashiers</option>';
+    const res = await fetch('../php/get-users.php');
+    const data = await res.json();
+    const users = Array.isArray(data) ? data : (data.users || []);
+    users.forEach(u => {
+      const opt = document.createElement('option');
+      opt.value = u.user_id;
+      opt.textContent = u.username || u.email;
+      select.appendChild(opt);
+    });
+  }
+
+  document.getElementById('cashier-filter')?.addEventListener('change', e => {
+    fetchSalesOverview(e.target.value);
+  });
+
+  // 🚀 Initial load
+  loadCashiers();
+  fetchSalesOverview();
+  fetchInventory();
+
   setInterval(() => {
-    fetchSalesOverview();
-    fetchInventoryForDashboard();
+    fetchSalesOverview(document.getElementById('cashier-filter').value || '');
+    fetchInventory();
   }, 30000);
 });

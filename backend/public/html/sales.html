@@ -20,9 +20,7 @@
     </div>
   </header>
 
-  <!-- 🔷 Page Wrapper -->
   <div class="page-wrapper">
-    
     <!-- 🔷 Sidebar Navigation -->
     <nav class="sidebar">
       <a href="dashboard.html" class="nav-link">Dashboard</a>
@@ -35,9 +33,14 @@
     <!-- 🔷 Main Sales Content -->
     <main class="sales-main">
       
-      <!-- 📊 Sales Overview Cards -->
+      <!-- 📊 Sales Overview -->
       <section class="sales-overview">
         <h3>📊 Sales Overview</h3>
+        <div class="filters">
+          <label>Cashier:
+            <select id="cashier-filter"></select>
+          </label>
+        </div>
         <div class="sales-cards">
           <div class="card"><h4>Daily Sales</h4><p id="daily-sales">₱0.00</p></div>
           <div class="card"><h4>Weekly Sales</h4><p id="weekly-sales">₱0.00</p></div>
@@ -45,7 +48,7 @@
         </div>
       </section>
 
-      <!-- 🧾 Sales History Table -->
+      <!-- 🧾 Sales History -->
       <section class="sales-history">
         <h3>🧾 Sales History</h3>
         <div class="filters">
@@ -62,6 +65,7 @@
               <th>Payment Method</th>
               <th>Qty</th>
               <th>Amount</th>
+              <th>Cashier</th>
             </tr>
           </thead>
           <tbody id="sales-body">
@@ -69,9 +73,9 @@
           </tbody>
         </table>
       </section>
-
     </main>
   </div>
+
   <!-- 🔷 Script -->
   <script src="../js/sales.js"></script>
 </body>

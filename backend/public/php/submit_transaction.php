@@ -55,12 +55,14 @@ try {
         UPDATE inventory SET qty = qty - :qty
         WHERE product_id = :product_id
     ");
-    $stmtCheck = $pdo->prepare("SELECT qty, oil_usage FROM inventory WHERE product_id = :product_id");
+    $stmtCheck = $pdo->prepare("SELECT qty FROM inventory WHERE product_id = :product_id");
 
-    // Oil deduction (global table)
+    // Oil deduction (Cooking Oil in inventory)
     $stmtOilDeduct = $pdo->prepare("
-        UPDATE oil_stock SET qty = qty - :oilQty
-        WHERE id = (SELECT id FROM oil_stock ORDER BY id DESC LIMIT 1)
+        UPDATE inventory
+        SET qty = qty - :oilQty,
+            updated_at = NOW()
+        WHERE name = 'Cooking Oil'
     ");
 
     foreach ($items as $item) {
@@ -101,11 +103,9 @@ try {
             ':product_id' => $product_id
         ]);
 
-        // Deduct oil stock
-        $oilUsage = (int)($row['oil_usage'] ?? 0);
-        if ($oilUsage > 0) {
-            $stmtOilDeduct->execute([':oilQty' => $oilUsage * $qty]);
-        }
+        // Deduct oil stock (always 20 per product ordered)
+        $oilDeductQty = 20 * $qty;
+        $stmtOilDeduct->execute([':oilQty' => $oilDeductQty]);
     }
 
     $pdo->commit();
