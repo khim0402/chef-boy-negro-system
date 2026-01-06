@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const row = document.createElement("tr");
         row.innerHTML = `
           <td>${user.user_id}</td>
-          <td>${user.email}</td>
+          <td>${user.username}</td>
           <td>${user.role}</td>
           <td>${user.created_at}</td>
           <td><button class="delete-btn" data-id="${user.user_id}">Delete</button></td>
