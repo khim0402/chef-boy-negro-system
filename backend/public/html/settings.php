@@ -10,19 +10,24 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['role'])) {
     exit();
 }
 
-// Role-based access
-if ($_SESSION['role'] === 'Admin') {
+// Normalize role to lowercase for comparison
+$role = strtolower($_SESSION['role']);
+
+if ($role === 'admin') {
+    // ✅ Admins can access Settings
     $restricted = false;
-} elseif ($_SESSION['role'] === 'Manager') {
+} elseif ($role === 'manager') {
+    // 🚫 Managers are restricted (show message, no redirect)
     $restricted = true;
-} elseif ($_SESSION['role'] === 'Cashier') {
+} elseif ($role === 'cashier') {
+    // Cashiers → redirect to POS
     header("Location: pos.html");
     exit();
 } else {
+    // Unknown role → back to login
     header("Location: login.html");
     exit();
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -73,8 +78,13 @@ if ($_SESSION['role'] === 'Admin') {
           </div>
 
           <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" placeholder="Enter a username" required>
+          </div>
+
+          <div class="form-group">
             <label for="password">Password</label>
-            <input type="password" id="password" name="password" placeholder="You must enter atleast 8 characters password" required >
+            <input type="password" id="password" name="password" placeholder="At least 8 characters" required>
           </div>
 
           <div class="form-group">
@@ -111,10 +121,7 @@ if ($_SESSION['role'] === 'Admin') {
     </main>
   </div>
 
-  <!-- Always load header clock -->
   <script src="../js/header.js"></script>
-
-  <!-- Only load settings.js for Admin -->
   <?php if (!$restricted): ?>
     <script src="../js/settings.js"></script>
   <?php endif; ?>
