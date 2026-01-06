@@ -476,15 +476,17 @@ if (proceedButton) {
     if (!orderItems.some(i => !i.voided)) return alert('No active items in order.');
     if (!cashierId) return alert('No cashier identified. Please log in again.');
 
-    const method = activeMethodBtn.textContent.trim();
+    const method = activeMethodBtn.textContent.trim().toLowerCase();
 
-    // ✅ Allow GCash without requiring reference number
-    // ✅ Allow GCash to proceed even if received < total (like Cash)
-    if (method.toLowerCase() === 'cash') {
+    // ✅ Cash requires keypad input
+    if (method === 'cash') {
       if (received < total) return alert('Insufficient payment.');
     }
 
-    // Final stock check for all active lines
+    // ✅ GCash does NOT require keypad input
+    // (no check for received vs total, no gcash_ref)
+    
+    // Final stock check
     const toCheck = orderItems
       .filter(i => !i.voided)
       .map(i => ({ name: i.name, product_id: i.product_id, qty: i.qty }));
@@ -493,7 +495,6 @@ if (proceedButton) {
       .then(ok => {
         if (!ok) return null;
 
-        // Submit only non-voided lines
         const payloadItems = orderItems
           .filter(i => !i.voided)
           .map(i => ({
@@ -510,14 +511,13 @@ if (proceedButton) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             items: payloadItems,
-            payment_method: method,
-            cashier_id: cashierId
-            // 👈 gcash_ref removed entirely
+            payment_method: method,   // "cash" or "gcash"
+            cashier_id: cashierId     // 👈 gcash_ref removed
           })
         });
       })
       .then(async res => {
-        if (!res) return; // stock error handled
+        if (!res) return;
         const text = await res.text();
         let data;
         try { data = JSON.parse(text); } catch {
