@@ -20,7 +20,9 @@
     </div>
   </header>
 
+  <!-- 🔷 Page Wrapper -->
   <div class="page-wrapper">
+    
     <!-- 🔷 Sidebar Navigation -->
     <nav class="sidebar">
       <a href="dashboard.html" class="nav-link">Dashboard</a>
@@ -33,14 +35,9 @@
     <!-- 🔷 Main Sales Content -->
     <main class="sales-main">
       
-      <!-- 📊 Sales Overview -->
+      <!-- 📊 Sales Overview Cards -->
       <section class="sales-overview">
         <h3>📊 Sales Overview</h3>
-        <div class="filters">
-          <label>Cashier:
-            <select id="cashier-filter"></select>
-          </label>
-        </div>
         <div class="sales-cards">
           <div class="card"><h4>Daily Sales</h4><p id="daily-sales">₱0.00</p></div>
           <div class="card"><h4>Weekly Sales</h4><p id="weekly-sales">₱0.00</p></div>
@@ -48,34 +45,36 @@
         </div>
       </section>
 
-      <!-- 🧾 Sales History -->
       <section class="sales-history">
-        <h3>🧾 Sales History</h3>
-        <div class="filters">
-          <label>Start Date: <input type="date" id="start-date"></label>
-          <label>End Date: <input type="date" id="end-date"></label>
-          <button onclick="filterSales()">Filter</button>
-        </div>
-
-        <table class="sales-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Product</th>
-              <th>Payment Method</th>
-              <th>Qty</th>
-              <th>Amount</th>
-              <th>Cashier</th>
-            </tr>
-          </thead>
-          <tbody id="sales-body">
-            <!-- Injected rows -->
-          </tbody>
-        </table>
-      </section>
-    </main>
+  <h3>🧾 Sales History</h3>
+  <div class="filters">
+    <label>Start Date: <input type="date" id="start-date"></label>
+    <label>End Date: <input type="date" id="end-date"></label>
+    <label>Cashier:
+      <select id="cashier-filter"></select>
+    </label>
+    <button onclick="filterSales()">Filter</button>
   </div>
 
+  <table class="sales-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Product</th>
+        <th>Payment Method</th>
+        <th>Qty</th>
+        <th>Amount</th>
+        <th>Cashier</th> <!-- 👈 added column -->
+      </tr>
+    </thead>
+    <tbody id="sales-body">
+      <!-- Injected rows -->
+    </tbody>
+  </table>
+</section>
+
+    </main>
+  </div>
   <!-- 🔷 Script -->
   <script src="../js/sales.js"></script>
 </body>
