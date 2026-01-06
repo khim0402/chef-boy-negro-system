@@ -3,13 +3,14 @@ header('Content-Type: application/json');
 require_once(__DIR__ . '/db.php');
 
 $email    = trim($_POST['email'] ?? '');
+$username = trim($_POST['username'] ?? '');
 $password = trim($_POST['password'] ?? '');
 $roleRaw  = trim($_POST['role'] ?? '');
 
 // Normalize role to lowercase for DB consistency
 $role = strtolower($roleRaw);
 
-if (!$email || !$password || !$role) {
+if (!$email || !$username || !$password || !$role) {
     echo json_encode(["status" => "error", "message" => "Missing fields"]);
     exit;
 }
@@ -34,11 +35,12 @@ $hashed = hash("sha256", $password);
 
 try {
     $stmt = $pdo->prepare("
-        INSERT INTO users (email, password, role, created_at)
-        VALUES (:email, :password, :role, NOW())
+        INSERT INTO users (email, username, password, role, created_at)
+        VALUES (:email, :username, :password, :role, NOW())
     ");
     $stmt->execute([
         ':email'    => $email,
+        ':username' => $username,
         ':password' => $hashed,
         ':role'     => $role
     ]);
@@ -48,3 +50,4 @@ try {
     // Return the actual SQL error for debugging in dev; keep generic if you prefer
     echo json_encode(["status" => "error", "message" => $e->getMessage()]);
 }
+?>
