@@ -11,21 +11,18 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['role'])) {
 }
 
 // Role-based access
-if ($_SESSION['role'] === 'admin') {
-    // ✅ Admins can access Settings
+if ($_SESSION['role'] === 'Admin') {
     $restricted = false;
-} elseif ($_SESSION['role'] === 'manager') {
-    // 🚫 Managers are restricted (show message, no redirect)
+} elseif ($_SESSION['role'] === 'Manager') {
     $restricted = true;
-} elseif ($_SESSION['role'] === 'cashier') {
-    // Cashiers → redirect to POS
+} elseif ($_SESSION['role'] === 'Cashier') {
     header("Location: pos.html");
     exit();
 } else {
-    // Unknown role → back to login
     header("Location: login.html");
     exit();
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
