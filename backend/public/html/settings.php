@@ -46,7 +46,7 @@ if ($role === 'admin') {
     </div>
     <div class="header-right">
       <span id="datetime"></span>
-      <button class="logout-btn">Logout</button>
+      <button class="logout-btn" onclick="window.location.href='/php/logout.php'">Logout</button>
     </div>
   </header>
 
@@ -74,12 +74,12 @@ if ($role === 'admin') {
         <form id="user-form" action="/php/settings-api.php" method="post">
           <div class="form-group">
             <label for="email">Email</label>
-            <input type="email" id="email" name="email" placeholder="Enter your email" required>
+            <input type="email" id="email" name="email" placeholder="Enter email" required>
           </div>
 
           <div class="form-group">
             <label for="username">Username</label>
-            <input type="text" id="username" name="username" placeholder="Enter a username" required>
+            <input type="text" id="username" name="username" placeholder="Enter username" required>
           </div>
 
           <div class="form-group">
@@ -121,7 +121,10 @@ if ($role === 'admin') {
     </main>
   </div>
 
+  <!-- Always load header clock -->
   <script src="../js/header.js"></script>
+
+  <!-- Only load settings.js for Admin -->
   <?php if (!$restricted): ?>
     <script src="../js/settings.js"></script>
   <?php endif; ?>

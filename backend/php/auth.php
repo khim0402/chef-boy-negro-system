@@ -1,4 +1,5 @@
 <?php
+session_start(); // ✅ Start session at the very top
 header('Content-Type: application/json; charset=utf-8');
 require_once(__DIR__ . '/db.php');
 
@@ -31,10 +32,20 @@ try {
         throw new Exception("Invalid credentials.");
     }
 
+    // ✅ Set session variables for later checks in settings.php
+    $_SESSION['user_id']  = $user['user_id'];
+    $_SESSION['role']     = $user['role'];
+    $_SESSION['username'] = $user['username'];
+
     // Determine redirect based on role
-    $redirect = ($user['role'] === 'Cashier')
-        ? '../html/pos.html'
-        : '../html/dashboard.html';
+    $role = strtolower($user['role']);
+    if ($role === 'cashier') {
+        $redirect = '../html/pos.html';
+    } elseif ($role === 'admin') {
+        $redirect = '../html/settings.php';
+    } else {
+        $redirect = '../html/dashboard.html';
+    }
 
     // Success: return user info
     echo json_encode([
@@ -54,3 +65,4 @@ try {
         "message" => $e->getMessage()
     ]);
 }
+?>
